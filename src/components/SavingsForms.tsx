@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import {
   addEntry,
   createGoal,
+  updateGoal,
   updateMonthlyGoal,
   updateRate,
   type FormState,
@@ -151,16 +152,49 @@ export function EntryForm({
   );
 }
 
-export function GoalForm() {
-  const [state, action, pending] = useActionState(createGoal, initial);
-  const ref = useResetOnSuccess(state);
-  const [goalType, setGoalType] = useState("open");
+export type GoalDefaults = {
+  name: string;
+  type: "open" | "months" | "fixed";
+  target: number | null;
+  months: number | null;
+  base: "todos" | "necesidades";
+  initial: number;
+  date: string | null;
+  planned: number | null;
+  from: string | null;
+  until: string | null;
+};
+
+const emptyGoal: GoalDefaults = {
+  name: "",
+  type: "open",
+  target: null,
+  months: null,
+  base: "todos",
+  initial: 0,
+  date: null,
+  planned: null,
+  from: null,
+  until: null,
+};
+
+// Campos que comparten "Nueva meta" y "Editar meta".
+function GoalFields({ defaults }: { defaults: GoalDefaults }) {
+  const [goalType, setGoalType] = useState<string>(defaults.type);
 
   return (
-    <form ref={ref} action={action} className="space-y-3">
+    <>
       <label className="block">
         <span className="text-sm font-medium">Nombre</span>
-        <input name="name" type="text" maxLength={80} required placeholder="Ej: viaje a Europa" className={field} />
+        <input
+          name="name"
+          type="text"
+          maxLength={80}
+          required
+          defaultValue={defaults.name}
+          placeholder="Ej: viaje a Europa"
+          className={field}
+        />
       </label>
 
       <fieldset>
@@ -191,7 +225,16 @@ export function GoalForm() {
       {goalType === "fixed" && (
         <label className="block">
           <span className="text-sm font-medium">Monto (USD)</span>
-          <input name="target" type="number" step="any" inputMode="decimal" min="1" required className={field} />
+          <input
+            name="target"
+            type="number"
+            step="any"
+            inputMode="decimal"
+            min="1"
+            required
+            defaultValue={defaults.target ?? ""}
+            className={field}
+          />
         </label>
       )}
 
@@ -199,11 +242,20 @@ export function GoalForm() {
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
             <span className="text-sm font-medium">Meses</span>
-            <input name="target_months" type="number" inputMode="numeric" min="1" max="120" required className={field} />
+            <input
+              name="target_months"
+              type="number"
+              inputMode="numeric"
+              min="1"
+              max="120"
+              required
+              defaultValue={defaults.months ?? ""}
+              className={field}
+            />
           </label>
           <label className="block">
             <span className="text-sm font-medium">Qué gastos cuentan</span>
-            <select name="expense_base" defaultValue="todos" className={field}>
+            <select name="expense_base" defaultValue={defaults.base} className={field}>
               <option value="todos">Todos</option>
               <option value="necesidades">Solo necesidades</option>
             </select>
@@ -220,19 +272,73 @@ export function GoalForm() {
             step="any"
             inputMode="decimal"
             min="0"
-            defaultValue="0"
+            defaultValue={defaults.initial}
             className={field}
           />
         </label>
         <label className="block">
-          <span className="text-sm font-medium">Para cuándo (opcional)</span>
-          <input name="target_date" type="date" className={field} />
+          <span className="text-sm font-medium">Fecha de la meta (opcional)</span>
+          <input name="target_date" type="date" defaultValue={defaults.date ?? ""} className={field} />
         </label>
       </div>
 
+      <fieldset className="space-y-2 rounded-xl border border-border p-3">
+        <legend className="px-1 text-sm font-medium">Plan de aporte (opcional)</legend>
+        <p className="text-xs text-muted">
+          Cuánto pensás aportar a esta meta por mes y en qué fechas. La app lo usa para proyectar cuándo llegás.
+        </p>
+        <label className="block">
+          <span className="text-sm">USD por mes</span>
+          <input
+            name="planned_monthly"
+            type="number"
+            step="any"
+            inputMode="decimal"
+            min="0"
+            defaultValue={defaults.planned ?? ""}
+            className={field}
+          />
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block">
+            <span className="text-sm">Desde</span>
+            <input name="planned_from" type="date" defaultValue={defaults.from ?? ""} className={field} />
+          </label>
+          <label className="block">
+            <span className="text-sm">Hasta</span>
+            <input name="planned_until" type="date" defaultValue={defaults.until ?? ""} className={field} />
+          </label>
+        </div>
+      </fieldset>
+    </>
+  );
+}
+
+export function GoalForm() {
+  const [state, action, pending] = useActionState(createGoal, initial);
+  const ref = useResetOnSuccess(state);
+
+  return (
+    <form ref={ref} action={action} className="space-y-3">
+      <GoalFields defaults={emptyGoal} />
       <Feedback state={state} okText="Meta creada." />
       <button type="submit" disabled={pending} className={primary}>
         {pending ? "Creando…" : "Crear meta"}
+      </button>
+    </form>
+  );
+}
+
+export function GoalEditForm({ id, defaults }: { id: string; defaults: GoalDefaults }) {
+  const [state, action, pending] = useActionState(updateGoal, initial);
+
+  return (
+    <form action={action} className="space-y-3">
+      <input type="hidden" name="id" value={id} />
+      <GoalFields defaults={defaults} />
+      <Feedback state={state} okText="Cambios guardados." />
+      <button type="submit" disabled={pending} className={primary}>
+        {pending ? "Guardando…" : "Guardar cambios"}
       </button>
     </form>
   );

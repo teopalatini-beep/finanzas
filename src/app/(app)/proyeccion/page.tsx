@@ -170,7 +170,7 @@ export default async function ProyeccionPage({ searchParams }: { searchParams: S
       {views.length > 0 && (
         <section className="rounded-2xl border border-border bg-surface p-4">
           <h2 className="font-medium">Tus metas</h2>
-          <p className="text-sm text-muted">Cada una, a su ritmo actual de aportes.</p>
+          <p className="text-sm text-muted">Cada una, siguiendo su plan de aportes (o tu ritmo actual si no tiene plan).</p>
           <ul className="mt-2 divide-y divide-border text-sm">
             {views.map((v) => {
               const when = v.monthsToGo && v.monthsToGo > 0 ? addMonths(today, v.monthsToGo) : null;
@@ -187,7 +187,7 @@ export default async function ProyeccionPage({ searchParams }: { searchParams: S
                     {v.targetUsd === null
                       ? v.atDate !== null
                         ? `${formatUSD(v.atDate)} para su fecha`
-                        : `+${formatUSD(v.pace)} por mes`
+                        : `+${formatUSD(v.plan?.monthly ?? v.pace)} por mes`
                       : v.monthsToGo === 0
                         ? "Ya llegaste"
                         : v.monthsToGo === null

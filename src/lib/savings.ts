@@ -53,3 +53,57 @@ export function requiredMonthly(accs: Acc[], contribId: string | null, target: n
   const factor = r === 0 ? months : (Math.pow(1 + r, months) - 1) / r;
   return gap / factor;
 }
+
+// ---- Plan de aportes por etapas (una meta con aporte mensual, desde / hasta) ----
+
+export type Plan = { monthly: number; from: string | null; until: string | null };
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+// Suma meses a una fecha YYYY-MM-DD, sin pasarse del último día del mes.
+function addMonthsISO(iso: string, n: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const t = y * 12 + (m - 1) + n;
+  const ny = Math.floor(t / 12);
+  const nm = (t % 12) + 1;
+  const last = new Date(Date.UTC(ny, nm, 0)).getUTCDate();
+  return `${ny}-${pad2(nm)}-${pad2(Math.min(d, last))}`;
+}
+
+// El aporte entra al final de cada mes, solo si esa fecha cae dentro de la ventana del plan.
+function inWindow(date: string, plan: Plan) {
+  return (!plan.from || date >= plan.from) && (!plan.until || date <= plan.until);
+}
+
+// Saldo mes a mes (posición 0 = hoy) de una meta que rinde y recibe un plan de aportes.
+export function projectPlan(balance: number, annualRate: number, plan: Plan, today: string, months: number): number[] {
+  const r = monthlyRate(annualRate);
+  let bal = balance;
+  const out = [balance];
+  for (let i = 1; i <= months; i++) {
+    bal *= 1 + r;
+    if (inWindow(addMonthsISO(today, i), plan)) bal += plan.monthly;
+    out.push(bal);
+  }
+  return out;
+}
+
+// Meses hasta llegar a un monto siguiendo el plan. 0 si ya llegaste, null si no llegás en maxMonths.
+export function monthsToTargetPlan(
+  balance: number,
+  annualRate: number,
+  plan: Plan,
+  today: string,
+  target: number,
+  maxMonths = 600,
+): number | null {
+  if (balance >= target) return 0;
+  const r = monthlyRate(annualRate);
+  let bal = balance;
+  for (let i = 1; i <= maxMonths; i++) {
+    bal *= 1 + r;
+    if (inWindow(addMonthsISO(today, i), plan)) bal += plan.monthly;
+    if (bal >= target) return i;
+  }
+  return null;
+}

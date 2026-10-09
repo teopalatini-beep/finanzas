@@ -59,7 +59,10 @@ export async function deleteEntry(formData: FormData) {
   refresh();
 }
 
-export async function createGoal(_prev: FormState, formData: FormData): Promise<FormState> {
+// Lee y valida los campos de una meta (sirve para crear y para editar).
+function parseGoal(formData: FormData):
+  | { error: string }
+  | { values: Record<string, unknown> } {
   const name = String(formData.get("name") ?? "").trim();
   const goalType = String(formData.get("goal_type") ?? "");
   const target = Number(formData.get("target"));
@@ -67,29 +70,66 @@ export async function createGoal(_prev: FormState, formData: FormData): Promise<
   const base = String(formData.get("expense_base") ?? "todos");
   const initial = Number(formData.get("initial_amount") || 0);
   const dateRaw = String(formData.get("target_date") ?? "").trim();
+  const plannedRaw = String(formData.get("planned_monthly") ?? "").trim();
+  const planned = plannedRaw === "" ? null : Number(plannedRaw);
+  const fromRaw = String(formData.get("planned_from") ?? "").trim();
+  const untilRaw = String(formData.get("planned_until") ?? "").trim();
 
-  if (!name) return fail("Poné un nombre para la meta.");
-  if (!["fixed", "months", "open"].includes(goalType)) return fail("Elegí el tipo de meta.");
+  if (!name) return { error: "Poné un nombre para la meta." };
+  if (!["fixed", "months", "open"].includes(goalType)) return { error: "Elegí el tipo de meta." };
   if (goalType === "fixed" && !(Number.isFinite(target) && target > 0)) {
-    return fail("El monto de la meta tiene que ser mayor a cero.");
+    return { error: "El monto de la meta tiene que ser mayor a cero." };
   }
   if (goalType === "months" && !(Number.isInteger(months) && months >= 1 && months <= 120)) {
-    return fail("Los meses de gastos tienen que estar entre 1 y 120.");
+    return { error: "Los meses de gastos tienen que estar entre 1 y 120." };
   }
-  if (!["todos", "necesidades"].includes(base)) return fail("Elegí qué gastos cuentan.");
-  if (!Number.isFinite(initial) || initial < 0) return fail("Lo que ya tenés ahorrado no puede ser negativo.");
-  if (dateRaw && !isDate(dateRaw)) return fail("La fecha no es válida.");
+  if (!["todos", "necesidades"].includes(base)) return { error: "Elegí qué gastos cuentan." };
+  if (!Number.isFinite(initial) || initial < 0) return { error: "Lo que ya tenés ahorrado no puede ser negativo." };
+  if (dateRaw && !isDate(dateRaw)) return { error: "La fecha de la meta no es válida." };
+  if (planned !== null && (!Number.isFinite(planned) || planned < 0)) {
+    return { error: "El aporte planeado no puede ser negativo." };
+  }
+  if ((fromRaw && !isDate(fromRaw)) || (untilRaw && !isDate(untilRaw))) {
+    return { error: "Las fechas del plan no son válidas." };
+  }
+  if (fromRaw && untilRaw && untilRaw < fromRaw) return { error: "El plan termina antes de empezar." };
+
+  return {
+    values: {
+      name,
+      target_amount: goalType === "fixed" ? target : null,
+      target_months: goalType === "months" ? months : null,
+      expense_base: base,
+      initial_amount: initial,
+      target_date: dateRaw || null,
+      planned_monthly: planned,
+      planned_from: planned === null ? null : fromRaw || null,
+      planned_until: planned === null ? null : untilRaw || null,
+    },
+  };
+}
+
+export async function createGoal(_prev: FormState, formData: FormData): Promise<FormState> {
+  const parsed = parseGoal(formData);
+  if ("error" in parsed) return fail(parsed.error);
 
   const supabase = await createClient();
-  const { error } = await supabase.from("goals").insert({
-    name,
-    target_amount: goalType === "fixed" ? target : null,
-    target_months: goalType === "months" ? months : null,
-    expense_base: base,
-    initial_amount: initial,
-    target_date: dateRaw || null,
-  });
+  const { error } = await supabase.from("goals").insert(parsed.values);
   if (error) return fail("No se pudo crear la meta.");
+
+  refresh();
+  return done;
+}
+
+export async function updateGoal(_prev: FormState, formData: FormData): Promise<FormState> {
+  const id = String(formData.get("id") ?? "");
+  if (!isUUID(id)) return fail("La meta no es válida.");
+  const parsed = parseGoal(formData);
+  if ("error" in parsed) return fail(parsed.error);
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("goals").update(parsed.values).eq("id", id);
+  if (error) return fail("No se pudo guardar la meta.");
 
   refresh();
   return done;

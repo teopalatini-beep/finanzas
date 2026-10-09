@@ -1,5 +1,5 @@
 import { ConfirmDelete } from "@/components/DeleteButtons";
-import { EntryForm, GoalForm, MonthlyGoalForm, RateForm } from "@/components/SavingsForms";
+import { EntryForm, GoalEditForm, GoalForm, MonthlyGoalForm, RateForm } from "@/components/SavingsForms";
 import { previousCycles } from "@/lib/cycles";
 import { addMonths, longDate, monthName, todayISO } from "@/lib/dates";
 import { formatARS, formatUSD, formatUSD2 } from "@/lib/format";
@@ -189,8 +189,19 @@ export default async function MetasPage() {
               <ul className="mt-3 space-y-1 text-sm">
                 <li>
                   Este ciclo sumaste <span className="font-medium">{formatUSD(v.thisCycle)}</span>
-                  {v.pace > 0 && <span className="text-muted"> · ritmo habitual {formatUSD(v.pace)} por mes</span>}
+                  {!v.plan && v.pace > 0 && (
+                    <span className="text-muted"> · ritmo habitual {formatUSD(v.pace)} por mes</span>
+                  )}
                 </li>
+                {v.plan && (
+                  <li>
+                    Plan: <span className="font-medium">{formatUSD(v.plan.monthly)} por mes</span>
+                    <span className="text-muted">
+                      {v.plan.from ? ` desde el ${longDate(v.plan.from)}` : ""}
+                      {v.plan.until ? ` hasta el ${longDate(v.plan.until)}` : ""}
+                    </span>
+                  </li>
+                )}
                 {v.targetUsd !== null && (
                   <li>
                     {v.monthsToGo === 0
@@ -204,10 +215,33 @@ export default async function MetasPage() {
                   <li className="text-muted">Para llegar a tiempo necesitás aportar {formatUSD2(v.needMonthly)} por mes.</li>
                 )}
                 {v.targetUsd === null && v.atDate !== null && (
-                  <li className="text-muted">A este ritmo, para esa fecha tendrías {formatUSD(v.atDate)}.</li>
+                  <li className="text-muted">
+                    {v.plan ? "Con tu plan" : "A este ritmo"}, para el {longDate(goal.targetDate!)} tendrías{" "}
+                    {formatUSD(v.atDate)}.
+                  </li>
                 )}
                 {v.targetNote && <li className="text-muted">{v.targetNote}</li>}
               </ul>
+              <details className="mt-3 border-t border-border pt-2">
+                <summary className="min-h-9 cursor-pointer text-sm font-medium text-ok">Editar meta</summary>
+                <div className="pt-3">
+                  <GoalEditForm
+                    id={goal.id}
+                    defaults={{
+                      name: goal.name,
+                      type: goal.target !== null ? "fixed" : goal.targetMonths !== null ? "months" : "open",
+                      target: goal.target,
+                      months: goal.targetMonths,
+                      base: goal.expenseBase,
+                      initial: goal.initialAmount,
+                      date: goal.targetDate,
+                      planned: goal.plannedMonthly,
+                      from: goal.plannedFrom,
+                      until: goal.plannedUntil,
+                    }}
+                  />
+                </div>
+              </details>
             </article>
           );
         })}

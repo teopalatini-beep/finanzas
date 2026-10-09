@@ -22,6 +22,10 @@ export type Goal = {
   expenseBase: "todos" | "necesidades";
   initialAmount: number;
   targetDate: string | null;
+  // Plan de aporte mensual (opcional), con ventana de fechas.
+  plannedMonthly: number | null;
+  plannedFrom: string | null;
+  plannedUntil: string | null;
 };
 
 export type SavingsData = {
@@ -48,7 +52,9 @@ export async function loadSavings(): Promise<SavingsData> {
       .order("created_at", { ascending: false }),
     supabase
       .from("goals")
-      .select("id, name, target_amount, target_months, expense_base, initial_amount, target_date")
+      .select(
+        "id, name, target_amount, target_months, expense_base, initial_amount, target_date, planned_monthly, planned_from, planned_until",
+      )
       .order("created_at"),
     supabase.from("settings").select("monthly_savings_usd").maybeSingle(),
   ]);
@@ -87,6 +93,9 @@ export async function loadSavings(): Promise<SavingsData> {
       expenseBase: g.expense_base,
       initialAmount: Number(g.initial_amount),
       targetDate: g.target_date,
+      plannedMonthly: g.planned_monthly === null ? null : Number(g.planned_monthly),
+      plannedFrom: g.planned_from,
+      plannedUntil: g.planned_until,
     })),
     monthlyGoalUsd: Number(settings?.monthly_savings_usd ?? 0),
     contribAccountId: lastAporte?.accountId ?? accounts[0]?.id ?? null,

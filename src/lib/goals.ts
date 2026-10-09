@@ -2,7 +2,7 @@ import { previousCycles, type Cycle } from "@/lib/cycles";
 import { averageMonthlyExpenses, type ExpenseAverage, type ExpenseBase } from "@/lib/expenses";
 import { monthsBetween } from "@/lib/dates";
 import { formatARS } from "@/lib/format";
-import { monthsToTarget, project, requiredMonthly } from "@/lib/savings";
+import { monthsToTargetPlan, projectPlan, requiredMonthly, type Plan } from "@/lib/savings";
 import type { Goal, SavingsData } from "@/lib/savings-data";
 import { createClient } from "@/lib/supabase/server";
 
@@ -12,10 +12,11 @@ export type GoalView = {
   targetUsd: number | null; // null = sin tope, o no se pudo calcular todavía
   targetNote: string | null; // cómo se calculó el monto, o por qué no se pudo
   thisCycle: number; // USD asignados a esta meta en el ciclo actual
-  pace: number; // USD por mes, a tu ritmo actual
+  pace: number; // USD por mes, a tu ritmo actual (se usa si la meta no tiene plan)
+  plan: Plan | null; // el plan de aporte que cargaste, si hay
   monthsToGo: number | null; // 0 = ya llegaste, null = no llegás o no hay tope
   needMonthly: number | null; // USD por mes para llegar a tiempo
-  atDate: number | null; // USD que tendrías en la fecha de la meta, a tu ritmo
+  atDate: number | null; // USD que tendrías en la fecha de la meta, siguiendo el plan o tu ritmo
 };
 
 // Une las metas con lo que se asignó a cada una. Los aportes nuevos rinden como la cuenta de destino.
@@ -71,6 +72,13 @@ export async function buildGoalViews(data: SavingsData, today: string): Promise<
     const past = previous.map(aportesIn).filter((v) => v > 0);
     const pace = past.length > 0 ? past.reduce((s, v) => s + v, 0) / past.length : thisCycle;
 
+    // Con plan, se siguen sus etapas; sin plan, se supone que seguís al ritmo actual.
+    const declared: Plan | null =
+      goal.plannedMonthly !== null
+        ? { monthly: goal.plannedMonthly, from: goal.plannedFrom, until: goal.plannedUntil }
+        : null;
+    const plan: Plan = declared ?? { monthly: pace, from: null, until: null };
+
     const acc = [{ id: "g", balance: saved, annualRate: rate }];
     const monthsLeft = goal.targetDate ? monthsBetween(today, goal.targetDate) : null;
 
@@ -81,10 +89,11 @@ export async function buildGoalViews(data: SavingsData, today: string): Promise<
       targetNote,
       thisCycle,
       pace,
-      monthsToGo: targetUsd ? monthsToTarget(acc, "g", pace, targetUsd) : null,
+      plan: declared,
+      monthsToGo: targetUsd ? monthsToTargetPlan(saved, rate, plan, today, targetUsd) : null,
       needMonthly:
         targetUsd && monthsLeft !== null && monthsLeft > 0 ? requiredMonthly(acc, "g", targetUsd, monthsLeft) : null,
-      atDate: monthsLeft !== null && monthsLeft > 0 ? project(acc, "g", pace, monthsLeft)[monthsLeft].total : null,
+      atDate: monthsLeft !== null && monthsLeft > 0 ? projectPlan(saved, rate, plan, today, monthsLeft)[monthsLeft] : null,
     };
   });
 }
