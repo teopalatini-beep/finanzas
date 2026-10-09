@@ -41,12 +41,16 @@ function Feedback({ state, okText }: { state: FormState; okText: string }) {
 
 export function EntryForm({
   accounts,
+  goals,
   defaultAccountId,
+  defaultGoalId,
   today,
   lastFx,
 }: {
   accounts: AccountOption[];
+  goals: AccountOption[];
   defaultAccountId: string | null;
+  defaultGoalId: string | null;
   today: string;
   lastFx: number | null;
 }) {
@@ -87,6 +91,20 @@ export function EntryForm({
           ))}
         </select>
       </label>
+
+      {type !== "ajuste" && goals.length > 0 && (
+        <label className="block">
+          <span className="text-sm font-medium">¿Para qué meta es?</span>
+          <select name="goal_id" defaultValue={defaultGoalId ?? ""} className={field}>
+            <option value="">Sin asignar</option>
+            {goals.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <label className="block">
@@ -133,37 +151,85 @@ export function EntryForm({
   );
 }
 
-export function GoalForm({ accounts }: { accounts: AccountOption[] }) {
+export function GoalForm() {
   const [state, action, pending] = useActionState(createGoal, initial);
   const ref = useResetOnSuccess(state);
+  const [goalType, setGoalType] = useState("open");
 
   return (
     <form ref={ref} action={action} className="space-y-3">
       <label className="block">
         <span className="text-sm font-medium">Nombre</span>
-        <input name="name" type="text" maxLength={80} required placeholder="Ej: gastos del viaje" className={field} />
+        <input name="name" type="text" maxLength={80} required placeholder="Ej: viaje a Europa" className={field} />
       </label>
-      <div className="grid grid-cols-2 gap-3">
+
+      <fieldset>
+        <legend className="text-sm font-medium">¿Cuánto querés juntar?</legend>
+        <input type="hidden" name="goal_type" value={goalType} />
+        <div className="mt-1 grid gap-2">
+          {[
+            ["open", "Lo máximo posible", "Sin tope: se mide por lo que vas juntando"],
+            ["months", "N meses de gastos", "Un colchón: la app calcula el monto con tus gastos reales"],
+            ["fixed", "Un monto fijo", "Un número en dólares"],
+          ].map(([value, label, hint]) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={goalType === value}
+              onClick={() => setGoalType(value)}
+              className={`rounded-xl border p-3 text-left ${
+                goalType === value ? "border-ok bg-ok/10" : "border-border bg-background"
+              }`}
+            >
+              <span className="block text-sm font-medium">{label}</span>
+              <span className="block text-xs text-muted">{hint}</span>
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      {goalType === "fixed" && (
         <label className="block">
           <span className="text-sm font-medium">Monto (USD)</span>
           <input name="target" type="number" step="any" inputMode="decimal" min="1" required className={field} />
+        </label>
+      )}
+
+      {goalType === "months" && (
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block">
+            <span className="text-sm font-medium">Meses</span>
+            <input name="target_months" type="number" inputMode="numeric" min="1" max="120" required className={field} />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium">Qué gastos cuentan</span>
+            <select name="expense_base" defaultValue="todos" className={field}>
+              <option value="todos">Todos</option>
+              <option value="necesidades">Solo necesidades</option>
+            </select>
+          </label>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <label className="block">
+          <span className="text-sm font-medium">Ya tenés ahorrado (USD)</span>
+          <input
+            name="initial_amount"
+            type="number"
+            step="any"
+            inputMode="decimal"
+            min="0"
+            defaultValue="0"
+            className={field}
+          />
         </label>
         <label className="block">
           <span className="text-sm font-medium">Para cuándo (opcional)</span>
           <input name="target_date" type="date" className={field} />
         </label>
       </div>
-      <label className="block">
-        <span className="text-sm font-medium">¿De qué cuenta sale?</span>
-        <select name="account_id" defaultValue="" className={field}>
-          <option value="">Todo mi ahorro</option>
-          {accounts.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
-        </select>
-      </label>
+
       <Feedback state={state} okText="Meta creada." />
       <button type="submit" disabled={pending} className={primary}>
         {pending ? "Creando…" : "Crear meta"}

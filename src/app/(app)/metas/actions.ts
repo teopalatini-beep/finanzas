@@ -23,7 +23,9 @@ export async function addEntry(_prev: FormState, formData: FormData): Promise<Fo
   const fx = fxRaw === "" ? null : Number(fxRaw);
   const date = String(formData.get("date") ?? "");
   const note = String(formData.get("note") ?? "").trim() || null;
+  const goalRaw = String(formData.get("goal_id") ?? "");
 
+  if (goalRaw && !isUUID(goalRaw)) return fail("La meta no es válida.");
   if (!isUUID(accountId)) return fail("Elegí la cuenta.");
   if (!["aporte", "retiro", "ajuste"].includes(type)) return fail("Elegí el tipo de movimiento.");
   if (!Number.isFinite(amount) || amount === 0) return fail("Ingresá un monto en dólares.");
@@ -40,6 +42,8 @@ export async function addEntry(_prev: FormState, formData: FormData): Promise<Fo
     fx_rate: fx,
     entry_type: type,
     note,
+    // Solo los aportes y retiros se asignan a una meta; el rendimiento queda sin asignar.
+    goal_id: type !== "ajuste" && goalRaw ? goalRaw : null,
   });
   if (error) return fail("No se pudo guardar el movimiento.");
 
@@ -57,21 +61,33 @@ export async function deleteEntry(formData: FormData) {
 
 export async function createGoal(_prev: FormState, formData: FormData): Promise<FormState> {
   const name = String(formData.get("name") ?? "").trim();
+  const goalType = String(formData.get("goal_type") ?? "");
   const target = Number(formData.get("target"));
+  const months = Number(formData.get("target_months"));
+  const base = String(formData.get("expense_base") ?? "todos");
+  const initial = Number(formData.get("initial_amount") || 0);
   const dateRaw = String(formData.get("target_date") ?? "").trim();
-  const accountRaw = String(formData.get("account_id") ?? "");
 
   if (!name) return fail("Poné un nombre para la meta.");
-  if (!Number.isFinite(target) || target <= 0) return fail("El monto de la meta tiene que ser mayor a cero.");
+  if (!["fixed", "months", "open"].includes(goalType)) return fail("Elegí el tipo de meta.");
+  if (goalType === "fixed" && !(Number.isFinite(target) && target > 0)) {
+    return fail("El monto de la meta tiene que ser mayor a cero.");
+  }
+  if (goalType === "months" && !(Number.isInteger(months) && months >= 1 && months <= 120)) {
+    return fail("Los meses de gastos tienen que estar entre 1 y 120.");
+  }
+  if (!["todos", "necesidades"].includes(base)) return fail("Elegí qué gastos cuentan.");
+  if (!Number.isFinite(initial) || initial < 0) return fail("Lo que ya tenés ahorrado no puede ser negativo.");
   if (dateRaw && !isDate(dateRaw)) return fail("La fecha no es válida.");
-  if (accountRaw && !isUUID(accountRaw)) return fail("La cuenta no es válida.");
 
   const supabase = await createClient();
   const { error } = await supabase.from("goals").insert({
     name,
-    target_amount: target,
+    target_amount: goalType === "fixed" ? target : null,
+    target_months: goalType === "months" ? months : null,
+    expense_base: base,
+    initial_amount: initial,
     target_date: dateRaw || null,
-    account_id: accountRaw || null,
   });
   if (error) return fail("No se pudo crear la meta.");
 

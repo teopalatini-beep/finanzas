@@ -1,10 +1,10 @@
 import { ConfirmDelete } from "@/components/DeleteButtons";
 import { EntryForm, GoalForm, MonthlyGoalForm, RateForm } from "@/components/SavingsForms";
 import { previousCycles } from "@/lib/cycles";
-import { addMonths, longDate, monthName, monthsBetween, todayISO } from "@/lib/dates";
+import { addMonths, longDate, monthName, todayISO } from "@/lib/dates";
 import { formatARS, formatUSD, formatUSD2 } from "@/lib/format";
-import { monthsToTarget, requiredMonthly, type Acc } from "@/lib/savings";
-import { loadSavings, toAccs } from "@/lib/savings-data";
+import { buildGoalViews } from "@/lib/goals";
+import { loadSavings } from "@/lib/savings-data";
 import { createClient } from "@/lib/supabase/server";
 import { deleteEntry, deleteGoal } from "./actions";
 
@@ -23,7 +23,9 @@ export default async function MetasPage() {
     .maybeSingle();
 
   const total = data.accounts.reduce((s, a) => s + a.balance, 0);
-  const allAccs = toAccs(data.accounts);
+  const views = await buildGoalViews(data, today);
+  const assigned = views.reduce((sum, v) => sum + v.saved, 0);
+  const unassigned = total - assigned;
 
   // Aportes por ciclo (cobro a cobro). Solo cuentan los aportes, no los retiros ni los ajustes.
   const cycles = period
@@ -112,7 +114,9 @@ export default async function MetasPage() {
           <div className="pt-3">
             <EntryForm
               accounts={data.accounts}
+              goals={data.goals.map((g) => ({ id: g.id, name: g.name }))}
               defaultAccountId={data.contribAccountId}
+              defaultGoalId={data.contribGoalId}
               today={today}
               lastFx={data.lastFx?.rate ?? null}
             />
@@ -145,70 +149,79 @@ export default async function MetasPage() {
       {/* Metas */}
       <section className="space-y-3">
         <h2 className="font-medium">Tus metas</h2>
-        {data.goals.length === 0 && (
+        {views.length === 0 && (
           <p className="rounded-2xl border border-dashed border-border p-4 text-sm text-muted">
-            Todavía no creaste ninguna. Por ejemplo, los gastos del viaje a Europa: cuánto necesitás y para cuándo.
+            Todavía no creaste ninguna. Por ejemplo: el viaje (lo máximo posible) y un colchón de N meses de gastos.
           </p>
         )}
-        {data.goals.map((g) => {
-          const accs: Acc[] = g.accountId ? allAccs.filter((a) => a.id === g.accountId) : allAccs;
-          const saved = accs.reduce((s, a) => s + a.balance, 0);
-          const contrib = g.accountId ?? data.contribAccountId;
-          const pct = Math.min(100, (saved / g.target) * 100);
-          const months = monthsToTarget(accs, contrib, monthly, g.target);
-          const monthsLeft = g.targetDate ? monthsBetween(today, g.targetDate) : null;
-          const need =
-            g.targetDate && monthsLeft !== null && monthsLeft > 0
-              ? requiredMonthly(accs, contrib, g.target, monthsLeft)
-              : null;
+        {views.map((v) => {
+          const { goal } = v;
+          const pct = v.targetUsd ? Math.min(100, (v.saved / v.targetUsd) * 100) : null;
+          const reachDate = v.monthsToGo && v.monthsToGo > 0 ? addMonths(today, v.monthsToGo) : null;
 
           return (
-            <article key={g.id} className="rounded-2xl border border-border bg-surface p-4">
+            <article key={goal.id} className="rounded-2xl border border-border bg-surface p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <h3 className="truncate font-medium">{g.name}</h3>
+                  <h3 className="truncate font-medium">{goal.name}</h3>
                   <p className="text-sm text-muted">
-                    {formatUSD(saved)} de {formatUSD(g.target)}
-                    {g.targetDate && ` · para el ${longDate(g.targetDate)}`}
+                    {formatUSD(v.saved)}
+                    {v.targetUsd ? ` de ${formatUSD(v.targetUsd)}` : " juntados"}
+                    {goal.targetDate && ` · para el ${longDate(goal.targetDate)}`}
                   </p>
                 </div>
-                <ConfirmDelete id={g.id} action={deleteGoal} question="¿Borrar esta meta?" label="Borrar meta" />
+                <ConfirmDelete id={goal.id} action={deleteGoal} question="¿Borrar esta meta?" label="Borrar meta" />
               </div>
-              <div
-                className="mt-2 h-2 overflow-hidden rounded-full bg-border"
-                role="progressbar"
-                aria-valuenow={Math.round(pct)}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label={`${g.name}: ${Math.round(pct)}%`}
-              >
-                <div className="h-full rounded-full bg-ok" style={{ width: `${pct}%` }} />
-              </div>
+
+              {pct !== null && (
+                <div
+                  className="mt-2 h-2 overflow-hidden rounded-full bg-border"
+                  role="progressbar"
+                  aria-valuenow={Math.round(pct)}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label={`${goal.name}: ${Math.round(pct)}%`}
+                >
+                  <div className="h-full rounded-full bg-ok" style={{ width: `${pct}%` }} />
+                </div>
+              )}
+
               <ul className="mt-3 space-y-1 text-sm">
                 <li>
-                  {months === 0
-                    ? "Ya llegaste a esta meta."
-                    : months === null
-                      ? `Con ${formatUSD(monthly)} por mes no llegás en los próximos 50 años.`
-                      : `Con ${formatUSD(monthly)} por mes llegás en ${months} ${months === 1 ? "mes" : "meses"} (${monthName(addMonths(today, months))} ${addMonths(today, months).slice(0, 4)}).`}
+                  Este ciclo sumaste <span className="font-medium">{formatUSD(v.thisCycle)}</span>
+                  {v.pace > 0 && <span className="text-muted"> · ritmo habitual {formatUSD(v.pace)} por mes</span>}
                 </li>
-                {need !== null && (
-                  <li className="text-muted">
-                    Para llegar a tiempo necesitás aportar {formatUSD2(need)} por mes.
+                {v.targetUsd !== null && (
+                  <li>
+                    {v.monthsToGo === 0
+                      ? "Ya llegaste a esta meta."
+                      : v.monthsToGo === null
+                        ? "Con tu ritmo actual no llegás en los próximos 50 años."
+                        : `A este ritmo llegás en ${v.monthsToGo} ${v.monthsToGo === 1 ? "mes" : "meses"} (${monthName(reachDate!)} ${reachDate!.slice(0, 4)}).`}
                   </li>
                 )}
-                {g.targetDate && monthsLeft !== null && monthsLeft <= 0 && months !== 0 && (
-                  <li className="text-warn">La fecha de esta meta ya pasó.</li>
+                {v.needMonthly !== null && (
+                  <li className="text-muted">Para llegar a tiempo necesitás aportar {formatUSD2(v.needMonthly)} por mes.</li>
                 )}
+                {v.targetUsd === null && v.atDate !== null && (
+                  <li className="text-muted">A este ritmo, para esa fecha tendrías {formatUSD(v.atDate)}.</li>
+                )}
+                {v.targetNote && <li className="text-muted">{v.targetNote}</li>}
               </ul>
             </article>
           );
         })}
 
+        {views.length > 0 && Math.abs(unassigned) >= 1 && (
+          <p className="px-1 text-sm text-muted">
+            Sin asignar a ninguna meta: {formatUSD(unassigned)} (por ejemplo, rendimientos o aportes sin meta).
+          </p>
+        )}
+
         <details className="rounded-2xl border border-border bg-surface p-4">
           <summary className="min-h-10 cursor-pointer font-medium">Nueva meta</summary>
           <div className="pt-3">
-            <GoalForm accounts={data.accounts} />
+            <GoalForm />
           </div>
         </details>
       </section>
@@ -229,6 +242,7 @@ export default async function MetasPage() {
                   <p className="truncate text-muted">
                     {longDate(e.occurredOn)}
                     {e.fxRate ? ` · a $${e.fxRate}` : ""}
+                    {e.goalId ? ` · ${data.goals.find((g) => g.id === e.goalId)?.name ?? ""}` : ""}
                     {e.note ? ` · ${e.note}` : ""}
                   </p>
                 </div>

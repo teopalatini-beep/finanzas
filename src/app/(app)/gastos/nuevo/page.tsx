@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CategoryCreator } from "@/components/CategoryCreator";
 import { ExpenseForm } from "@/components/ExpenseForm";
 import { getHoyData } from "@/lib/data";
 import { todayISO } from "@/lib/dates";
@@ -47,6 +48,7 @@ export default async function NuevoGastoPage() {
           ¿Tenés un PDF o fotos? Subilos en vez de cargar a mano
         </Link>
       </header>
+      <CategoryCreator envelopes={groups} />
       <ExpenseForm groups={groups} methods={methods ?? []} today={todayISO()} advice={advice} />
     </div>
   );

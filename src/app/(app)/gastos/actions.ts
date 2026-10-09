@@ -91,3 +91,30 @@ export async function deleteExpense(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/gastos");
 }
+
+export type CategoryState = { error: string | null; ok: boolean };
+
+// Crea una categoría nueva dentro de un sobre, con su tipo (necesidad o gusto).
+export async function createCategory(_prev: CategoryState, formData: FormData): Promise<CategoryState> {
+  const name = String(formData.get("name") ?? "").trim();
+  const envelopeId = String(formData.get("envelope_id") ?? "");
+  const kind = String(formData.get("kind") ?? "");
+
+  if (name.length < 2 || name.length > 40) return { error: "El nombre tiene que tener entre 2 y 40 letras.", ok: false };
+  if (!isUUID(envelopeId)) return { error: "Elegí el sobre.", ok: false };
+  if (!["necesidad", "gusto"].includes(kind)) return { error: "Elegí si es necesidad o gusto.", ok: false };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("categories").insert({ envelope_id: envelopeId, name, kind });
+  if (error) {
+    return {
+      error: error.code === "23505" ? "Ya tenés una categoría con ese nombre en ese sobre." : "No se pudo crear la categoría.",
+      ok: false,
+    };
+  }
+
+  revalidatePath("/gastos/nuevo");
+  revalidatePath("/gastos/importar");
+  revalidatePath("/analisis");
+  return { error: null, ok: true };
+}

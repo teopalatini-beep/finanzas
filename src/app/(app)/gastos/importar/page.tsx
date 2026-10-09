@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CategoryCreator } from "@/components/CategoryCreator";
 import { ImportFlow } from "@/components/ImportFlow";
 import { createClient } from "@/lib/supabase/server";
 
@@ -6,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 export const maxDuration = 120;
 
 type EnvelopeRow = {
+  id: string;
   name: string;
   emoji: string | null;
   categories: { id: string; name: string }[];
@@ -14,11 +16,12 @@ type EnvelopeRow = {
 export default async function ImportarPage() {
   const supabase = await createClient();
   const [{ data: envelopes }, { data: methods }] = await Promise.all([
-    supabase.from("envelopes").select("name, emoji, categories(id, name)").order("sort_order"),
+    supabase.from("envelopes").select("id, name, emoji, categories(id, name)").order("sort_order"),
     supabase.from("payment_methods").select("id, name, type").order("created_at"),
   ]);
 
   const groups = ((envelopes ?? []) as EnvelopeRow[]).map((e) => ({
+    envelopeId: e.id,
     envelope: e.name,
     emoji: e.emoji ?? "",
     categories: e.categories,
@@ -32,6 +35,7 @@ export default async function ImportarPage() {
           ¿Un solo gasto? Cargalo a mano
         </Link>
       </header>
+      <CategoryCreator envelopes={groups} />
       <ImportFlow groups={groups} methods={methods ?? []} />
     </div>
   );

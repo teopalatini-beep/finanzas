@@ -11,13 +11,17 @@ export type Entry = {
   fxRate: number | null;
   type: "aporte" | "retiro" | "ajuste";
   note: string | null;
+  goalId: string | null;
 };
+// Una meta tiene un monto fijo, o N meses de gastos, o ninguno de los dos (sin tope).
 export type Goal = {
   id: string;
   name: string;
-  target: number;
+  target: number | null;
+  targetMonths: number | null;
+  expenseBase: "todos" | "necesidades";
+  initialAmount: number;
   targetDate: string | null;
-  accountId: string | null;
 };
 
 export type SavingsData = {
@@ -26,6 +30,7 @@ export type SavingsData = {
   goals: Goal[];
   monthlyGoalUsd: number;
   contribAccountId: string | null; // a dónde van los aportes nuevos por defecto
+  contribGoalId: string | null; // para qué meta fue el último aporte
   lastFx: { rate: number; on: string } | null;
 };
 
@@ -38,10 +43,13 @@ export async function loadSavings(): Promise<SavingsData> {
     supabase.from("savings_accounts").select("id, name, annual_rate, opening_balance").order("created_at"),
     supabase
       .from("savings_entries")
-      .select("id, account_id, occurred_on, amount_usd, fx_rate, entry_type, note")
+      .select("id, account_id, occurred_on, amount_usd, fx_rate, entry_type, note, goal_id")
       .order("occurred_on", { ascending: false })
       .order("created_at", { ascending: false }),
-    supabase.from("goals").select("id, name, target_amount, target_date, account_id").order("created_at"),
+    supabase
+      .from("goals")
+      .select("id, name, target_amount, target_months, expense_base, initial_amount, target_date")
+      .order("created_at"),
     supabase.from("settings").select("monthly_savings_usd").maybeSingle(),
   ]);
 
@@ -55,6 +63,7 @@ export async function loadSavings(): Promise<SavingsData> {
     fxRate: e.fx_rate === null ? null : Number(e.fx_rate),
     type: e.entry_type,
     note: e.note,
+    goalId: e.goal_id,
   }));
 
   const accounts: Account[] = (accs ?? []).map((a) => ({
@@ -73,12 +82,15 @@ export async function loadSavings(): Promise<SavingsData> {
     goals: (goalRows ?? []).map((g) => ({
       id: g.id,
       name: g.name,
-      target: Number(g.target_amount),
+      target: g.target_amount === null ? null : Number(g.target_amount),
+      targetMonths: g.target_months,
+      expenseBase: g.expense_base,
+      initialAmount: Number(g.initial_amount),
       targetDate: g.target_date,
-      accountId: g.account_id,
     })),
     monthlyGoalUsd: Number(settings?.monthly_savings_usd ?? 0),
     contribAccountId: lastAporte?.accountId ?? accounts[0]?.id ?? null,
+    contribGoalId: lastAporte?.goalId ?? null,
     lastFx: lastWithFx ? { rate: lastWithFx.fxRate!, on: lastWithFx.occurredOn } : null,
   };
 }

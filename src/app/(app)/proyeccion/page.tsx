@@ -1,7 +1,8 @@
 import { ProjectionChart } from "@/components/ProjectionChart";
 import { addMonths, monthName, todayISO } from "@/lib/dates";
 import { formatARS, formatUSD } from "@/lib/format";
-import { monthsToTarget, project } from "@/lib/savings";
+import { buildGoalViews } from "@/lib/goals";
+import { project } from "@/lib/savings";
 import { loadSavings, toAccs } from "@/lib/savings-data";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -35,6 +36,7 @@ export default async function ProyeccionPage({ searchParams }: { searchParams: S
   const destino = data.accounts.some((a) => a.id === destinoParam) ? destinoParam! : data.contribAccountId;
 
   const accs = toAccs(data.accounts);
+  const views = await buildGoalViews(data, today);
   const start = accs.reduce((s, a) => s + a.balance, 0);
   const scenario = project(accs, destino, aporte, meses);
   const end = scenario[meses];
@@ -165,26 +167,32 @@ export default async function ProyeccionPage({ searchParams }: { searchParams: S
       </section>
 
       {/* Metas */}
-      {data.goals.length > 0 && (
+      {views.length > 0 && (
         <section className="rounded-2xl border border-border bg-surface p-4">
-          <h2 className="font-medium">Tus metas con este escenario</h2>
+          <h2 className="font-medium">Tus metas</h2>
+          <p className="text-sm text-muted">Cada una, a su ritmo actual de aportes.</p>
           <ul className="mt-2 divide-y divide-border text-sm">
-            {data.goals.map((g) => {
-              const sub = g.accountId ? accs.filter((a) => a.id === g.accountId) : accs;
-              const months = monthsToTarget(sub, g.accountId ?? destino, aporte, g.target);
-              const when = months && months > 0 ? addMonths(today, months) : null;
+            {views.map((v) => {
+              const when = v.monthsToGo && v.monthsToGo > 0 ? addMonths(today, v.monthsToGo) : null;
               return (
-                <li key={g.id} className="flex items-start justify-between gap-3 py-2">
+                <li key={v.goal.id} className="flex items-start justify-between gap-3 py-2">
                   <span className="min-w-0">
-                    <span className="block truncate font-medium">{g.name}</span>
-                    <span className="text-muted">{formatUSD(g.target)}</span>
+                    <span className="block truncate font-medium">{v.goal.name}</span>
+                    <span className="text-muted">
+                      {formatUSD(v.saved)}
+                      {v.targetUsd ? ` de ${formatUSD(v.targetUsd)}` : " juntados"}
+                    </span>
                   </span>
                   <span className="shrink-0 text-right">
-                    {months === 0
-                      ? "Ya llegaste"
-                      : months === null
-                        ? "No llegás"
-                        : `${months} ${months === 1 ? "mes" : "meses"}`}
+                    {v.targetUsd === null
+                      ? v.atDate !== null
+                        ? `${formatUSD(v.atDate)} para su fecha`
+                        : `+${formatUSD(v.pace)} por mes`
+                      : v.monthsToGo === 0
+                        ? "Ya llegaste"
+                        : v.monthsToGo === null
+                          ? "No llegás"
+                          : `${v.monthsToGo} ${v.monthsToGo === 1 ? "mes" : "meses"}`}
                     {when && (
                       <span className="block capitalize text-muted">
                         {monthName(when)} {when.slice(0, 4)}
