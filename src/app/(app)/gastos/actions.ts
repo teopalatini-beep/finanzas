@@ -99,13 +99,14 @@ export async function createCategory(_prev: CategoryState, formData: FormData): 
   const name = String(formData.get("name") ?? "").trim();
   const envelopeId = String(formData.get("envelope_id") ?? "");
   const kind = String(formData.get("kind") ?? "");
+  const description = String(formData.get("description") ?? "").trim().slice(0, 140) || null;
 
   if (name.length < 2 || name.length > 40) return { error: "El nombre tiene que tener entre 2 y 40 letras.", ok: false };
   if (!isUUID(envelopeId)) return { error: "Elegí el sobre.", ok: false };
   if (!["necesidad", "gusto"].includes(kind)) return { error: "Elegí si es necesidad o gusto.", ok: false };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("categories").insert({ envelope_id: envelopeId, name, kind });
+  const { error } = await supabase.from("categories").insert({ envelope_id: envelopeId, name, kind, description });
   if (error) {
     return {
       error: error.code === "23505" ? "Ya tenés una categoría con ese nombre en ese sobre." : "No se pudo crear la categoría.",

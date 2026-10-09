@@ -40,7 +40,7 @@ export default async function GastosPage() {
         <>
           <section aria-label="Sobres" className="space-y-3">
             {hoy.envelopes.map((e) => (
-              <EnvelopeCard key={e.id} {...e} />
+              <EnvelopeCard key={e.id} {...e} measureOnly={!hoy.budgetsActive} income={hoy.period.income} />
             ))}
           </section>
 

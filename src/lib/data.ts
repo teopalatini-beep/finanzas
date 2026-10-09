@@ -1,5 +1,6 @@
 import type { CardRules } from "@/lib/card-dates";
 import { getCardSettings, loadCycle, loadNextCycleCommitment } from "@/lib/cashflow";
+import { loadSavings } from "@/lib/savings-data";
 import { createClient } from "@/lib/supabase/server";
 import { addDays, addMonths, daysBetween, monthsBetween, monthName, todayISO } from "@/lib/dates";
 
@@ -31,6 +32,12 @@ export type HoyData = {
   nextCycleCommitted: number;
   today: string;
   todayExpenses: { total: number; items: TodayItem[] };
+  // Presupuestos: antes de budgetsFrom la app solo mide cuánto gastás.
+  budgetsActive: boolean;
+  budgetsFrom: string | null;
+  // Lo que te queda libre: sueldo − fijos − ahorro − lo gastado en el ciclo.
+  free: { amount: number; fixed: number; savings: number; spent: number };
+  nextBase: number; // sobre qué monto se mide el próximo ciclo (presupuestos, o lo libre si todavía no rigen)
 };
 
 export type TodayItem = {
@@ -123,6 +130,32 @@ export async function getHoyData(): Promise<HoyData | null> {
     method: r.payment_methods?.name ?? null,
   }));
 
+  // ---- Libre del ciclo (para cuando todavía no hay presupuestos) ----
+  const [{ data: settingsRow }, { data: fixedRows }, savings] = await Promise.all([
+    supabase.from("settings").select("budgets_from").maybeSingle(),
+    supabase.from("fixed_expenses").select("amount, payment_methods(type)").eq("active", true),
+    loadSavings(),
+  ]);
+  const budgetsFrom: string | null = settingsRow?.budgets_from ?? null;
+  const budgetsActive = !budgetsFrom || period.start_date >= budgetsFrom;
+
+  // Los fijos con tarjeta ya vienen en el resumen: se suman solo los que no pasan por la tarjeta.
+  const fixedOffCard = ((fixedRows ?? []) as unknown as { amount: number; payment_methods: { type: string } | null }[])
+    .filter((f) => f.payment_methods?.type !== "tarjeta_credito")
+    .reduce((sum, f) => sum + Number(f.amount), 0);
+
+  // Ahorro: lo que ya aportaste este ciclo (en USD × tu cotización) o el objetivo, lo que sea mayor.
+  const aportadoArs = savings.entries
+    .filter((e) => e.type === "aporte" && e.occurredOn >= period.start_date && e.occurredOn <= period.end_date)
+    .reduce((sum, e) => sum + e.amountUsd * (e.fxRate ?? savings.lastFx?.rate ?? 0), 0);
+  const reservadoArs = savings.lastFx ? savings.monthlyGoalUsd * savings.lastFx.rate : 0;
+  const savingsArs = Math.max(aportadoArs, reservadoArs);
+
+  const income = Number(period.income);
+  const spentCycle = cycleTxs.reduce((sum, t) => sum + t.amount, 0);
+  const nextStart = addDays(period.end_date, 1);
+  const nextActive = !budgetsFrom || nextStart >= budgetsFrom;
+
   const nextPayday = addDays(period.end_date, 1);
   return {
     period: {
@@ -142,5 +175,11 @@ export async function getHoyData(): Promise<HoyData | null> {
       nextCycle.amount + installments.filter((i) => i.remaining > 0).reduce((sum, i) => sum + i.perMonth, 0),
     today,
     todayExpenses: { total: todayItems.reduce((sum, i) => sum + i.amount, 0), items: todayItems },
+    budgetsActive,
+    budgetsFrom,
+    free: { amount: income - fixedOffCard - savingsArs - spentCycle, fixed: fixedOffCard, savings: savingsArs, spent: spentCycle },
+    nextBase: nextActive
+      ? envelopeSummaries.reduce((sum, e) => sum + e.budget, 0)
+      : income - fixedOffCard - savingsArs,
   };
 }

@@ -55,13 +55,16 @@ export async function parseStatement(_prev: ParseState, formData: FormData): Pro
   if (already) return { status: "error", error: "Ya cargaste este resumen." };
 
   const [{ data: envelopes }, { data: plansData }] = await Promise.all([
-    supabase.from("envelopes").select("name, categories(id, name, kind)").order("sort_order"),
+    supabase.from("envelopes").select("name, categories(id, name, kind, description)").order("sort_order"),
     supabase.from("installment_plans").select("id, description, total_amount, installments_count"),
   ]);
 
-  type Env = { name: string; categories: { id: string; name: string; kind: string }[] };
+  type Env = { name: string; categories: { id: string; name: string; kind: string; description: string | null }[] };
   const categories = ((envelopes ?? []) as Env[]).flatMap((e) =>
-    e.categories.map((c) => ({ id: c.id, label: `${e.name} > ${c.name} (${c.kind})` })),
+    e.categories.map((c) => ({
+      id: c.id,
+      label: `${e.name} > ${c.name} (${c.kind})${c.description ? `: ${c.description}` : ""}`,
+    })),
   );
   const validCategoryIds = new Set(categories.map((c) => c.id));
 

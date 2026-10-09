@@ -13,6 +13,8 @@ export type AdviceInput = {
   cycleEnd: string;
   nextCycleCommitted: number;
   nextBudget: number;
+  budgetsActive: boolean; // false: todavía se está midiendo, sin presupuesto por sobre
+  free: number; // lo que te queda libre en este ciclo
 };
 
 // Aviso que se muestra mientras cargás un gasto, antes de guardarlo.
@@ -31,6 +33,14 @@ export function adviceFor(i: AdviceInput): Advice | null {
         `pero ese ciclo ya tendría ${formatARS(committed)} comprometidos (${Math.round(share * 100)}% de tus ${formatARS(i.nextBudget)} libres).`,
       tone: share > 1 ? "over" : share >= 0.7 ? "warn" : "ok",
     };
+  }
+
+  // Sin presupuestos: el gasto sale de lo que te queda libre en el ciclo.
+  if (!i.budgetsActive) {
+    const left = i.free - i.amount;
+    return left < 0
+      ? { text: `Con este gasto te pasás ${formatARS(-left)} de lo que te queda libre este ciclo.`, tone: "over" }
+      : { text: `Sale de lo que te queda libre este ciclo: te quedarían ${formatARS(left)}.`, tone: "ok" };
   }
 
   if (!i.envelope) return null; // gastos fijos: no tienen sobre que controlar

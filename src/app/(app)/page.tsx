@@ -17,8 +17,8 @@ export default async function HoyPage() {
     );
   }
 
-  const { period, envelopes, todayExpenses } = data;
-  const left = envelopes.reduce((sum, e) => sum + (e.budget - e.spent), 0);
+  const { period, envelopes, todayExpenses, budgetsActive, budgetsFrom, free } = data;
+  const left = budgetsActive ? envelopes.reduce((sum, e) => sum + (e.budget - e.spent), 0) : free.amount;
 
   return (
     <div className="space-y-4">
@@ -27,8 +27,43 @@ export default async function HoyPage() {
           Faltan {period.daysLeft} {period.daysLeft === 1 ? "día" : "días"} · cobrás el{" "}
           {longDate(period.nextPayday)}
         </p>
-        <h1 className="mt-2 text-sm font-medium text-muted">Hasta fin de mes te quedan</h1>
+        <h1 className="mt-2 text-sm font-medium text-muted">
+          {budgetsActive ? "Hasta fin de mes te quedan" : "Libre hasta fin de mes"}
+        </h1>
         <p className="text-5xl font-semibold tabular-nums tracking-tight">{formatARS(left)}</p>
+
+        {!budgetsActive && (
+          <>
+            <p className="mt-2 text-sm text-muted">
+              Este ciclo estás midiendo cuánto gastás en cada cosa.
+              {budgetsFrom && ` Los presupuestos arrancan el ${longDate(budgetsFrom)}.`}
+            </p>
+            <details className="mt-2 text-sm">
+              <summary className="min-h-9 cursor-pointer font-medium text-ok">¿Cómo se calcula?</summary>
+              <dl className="mt-1 divide-y divide-border rounded-xl border border-border bg-surface px-3">
+                <div className="flex justify-between py-2">
+                  <dt>Sueldo</dt>
+                  <dd className="tabular-nums">{formatARS(period.income)}</dd>
+                </div>
+                <div className="flex justify-between py-2">
+                  <dt>Fijos fuera de tarjeta</dt>
+                  <dd className="tabular-nums">−{formatARS(free.fixed)}</dd>
+                </div>
+                <div className="flex justify-between py-2">
+                  <dt>Ahorro</dt>
+                  <dd className="tabular-nums">−{formatARS(free.savings)}</dd>
+                </div>
+                <div className="flex justify-between py-2">
+                  <dt>Gastado este ciclo (tarjeta y efectivo)</dt>
+                  <dd className="tabular-nums">−{formatARS(free.spent)}</dd>
+                </div>
+              </dl>
+              <p className="mt-1 text-xs text-muted">
+                La tarjeta se actualiza cuando subís el resumen: hasta entonces, lo que se paga con la Visa puede estar incompleto.
+              </p>
+            </details>
+          </>
+        )}
       </header>
 
       <section aria-label="Gastos de hoy" className="rounded-2xl border border-border bg-surface p-4">

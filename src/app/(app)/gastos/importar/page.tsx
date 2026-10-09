@@ -10,13 +10,13 @@ type EnvelopeRow = {
   id: string;
   name: string;
   emoji: string | null;
-  categories: { id: string; name: string }[];
+  categories: { id: string; name: string; description: string | null }[];
 };
 
 export default async function ImportarPage() {
   const supabase = await createClient();
   const [{ data: envelopes }, { data: methods }] = await Promise.all([
-    supabase.from("envelopes").select("id, name, emoji, categories(id, name)").order("sort_order"),
+    supabase.from("envelopes").select("id, name, emoji, categories(id, name, description)").order("sort_order"),
     supabase.from("payment_methods").select("id, name, type").order("created_at"),
   ]);
 

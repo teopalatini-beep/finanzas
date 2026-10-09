@@ -47,3 +47,42 @@ export async function updateSettings(_prev: SettingsState, formData: FormData): 
   revalidatePath("/", "layout");
   return { error: null, saved: true };
 }
+
+export type BudgetsState = { error: string | null; saved: boolean };
+
+const isUUID = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+
+// Fija el monto de cada sobre y la fecha desde la que rigen los presupuestos.
+export async function updateBudgets(_prev: BudgetsState, formData: FormData): Promise<BudgetsState> {
+  const fromRaw = String(formData.get("budgets_from") ?? "").trim();
+  if (fromRaw && !/^\d{4}-\d{2}-\d{2}$/.test(fromRaw)) return { error: "La fecha no es válida.", saved: false };
+
+  const amounts: { id: string; amount: number }[] = [];
+  for (const [key, value] of formData.entries()) {
+    if (!key.startsWith("amount_")) continue;
+    const id = key.slice("amount_".length);
+    const amount = Number(value);
+    if (!isUUID(id)) return { error: "Hay un sobre que no es válido.", saved: false };
+    if (!Number.isFinite(amount) || amount < 0) return { error: "Los montos no pueden ser negativos.", saved: false };
+    amounts.push({ id, amount });
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Tu sesión venció. Volvé a entrar.", saved: false };
+
+  for (const a of amounts) {
+    const { error } = await supabase.from("envelopes").update({ monthly_amount: a.amount }).eq("id", a.id);
+    if (error) return { error: "No se pudieron guardar los montos.", saved: false };
+  }
+  const { error } = await supabase
+    .from("settings")
+    .update({ budgets_from: fromRaw || null })
+    .eq("user_id", user.id);
+  if (error) return { error: "No se pudo guardar la fecha.", saved: false };
+
+  revalidatePath("/", "layout");
+  return { error: null, saved: true };
+}

@@ -6,7 +6,11 @@ import { formatARS } from "@/lib/format";
 import { longDate } from "@/lib/dates";
 import type { ParseState, ReviewLine, SaveState, PlanOption } from "@/lib/import-types";
 
-type Group = { envelope: string; emoji: string; categories: { id: string; name: string }[] };
+type Group = {
+  envelope: string;
+  emoji: string;
+  categories: { id: string; name: string; description: string | null }[];
+};
 type Method = { id: string; name: string; type: string };
 
 const field =
@@ -209,6 +213,12 @@ function LineCard({
               </optgroup>
             ))}
           </select>
+
+          {line.category_id && (
+            <p className="text-xs text-muted">
+              {groups.flatMap((g) => g.categories).find((c) => c.id === line.category_id)?.description}
+            </p>
+          )}
 
           {line.installment_total && (
             <select

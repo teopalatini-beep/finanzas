@@ -9,7 +9,7 @@ type EnvelopeRow = {
   id: string;
   name: string;
   emoji: string | null;
-  categories: { id: string; name: string }[];
+  categories: { id: string; name: string; description: string | null }[];
 };
 
 export default async function NuevoGastoPage() {
@@ -17,7 +17,7 @@ export default async function NuevoGastoPage() {
   const [{ data: envelopes }, { data: methods }, hoy] = await Promise.all([
     supabase
       .from("envelopes")
-      .select("id, name, emoji, categories(id, name)")
+      .select("id, name, emoji, categories(id, name, description)")
       .order("sort_order"),
     supabase.from("payment_methods").select("id, name, type").order("created_at"),
     getHoyData(),
@@ -37,6 +37,9 @@ export default async function NuevoGastoPage() {
         card: hoy.card,
         cycleEnd: hoy.period.end,
         nextCycleCommitted: hoy.nextCycleCommitted,
+        nextBase: hoy.nextBase,
+        budgetsActive: hoy.budgetsActive,
+        free: hoy.free.amount,
       }
     : null;
 

@@ -1,11 +1,33 @@
 import { formatARS, statusFor } from "@/lib/format";
 import { StatusBadge } from "./StatusBadge";
 
-type Props = { name: string; emoji: string; budget: number; spent: number };
+type Props = {
+  name: string;
+  emoji: string;
+  budget: number;
+  spent: number;
+  // Sin presupuesto: solo se muestra cuánto gastaste y qué parte del sueldo es.
+  measureOnly?: boolean;
+  income?: number;
+};
 
 const barColor = { ok: "bg-ok", warn: "bg-warn", over: "bg-over" } as const;
 
-export function EnvelopeCard({ name, emoji, budget, spent }: Props) {
+export function EnvelopeCard({ name, emoji, budget, spent, measureOnly = false, income = 0 }: Props) {
+  if (measureOnly) {
+    return (
+      <div className="rounded-2xl border border-border bg-surface p-4">
+        <span className="font-medium">
+          <span aria-hidden>{emoji}</span> {name}
+        </span>
+        <p className="mt-2 text-2xl font-semibold tabular-nums">{formatARS(spent)}</p>
+        <p className="text-sm text-muted">
+          gastado este ciclo{income > 0 ? ` · ${Math.round((spent / income) * 100)}% del sueldo` : ""}
+        </p>
+      </div>
+    );
+  }
+
   const status = statusFor(spent, budget);
   const left = budget - spent;
   const pct = Math.min(100, budget === 0 ? 0 : (spent / budget) * 100);

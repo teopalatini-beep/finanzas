@@ -9,7 +9,7 @@ type Group = {
   envelopeId: string;
   envelope: string;
   emoji: string;
-  categories: { id: string; name: string }[];
+  categories: { id: string; name: string; description: string | null }[];
 };
 type Method = { id: string; name: string; type: string };
 
@@ -18,6 +18,9 @@ export type AdviceContext = {
   card: CardRules;
   cycleEnd: string;
   nextCycleCommitted: number;
+  nextBase: number;
+  budgetsActive: boolean;
+  free: number;
 };
 
 const initial: ExpenseState = { error: null };
@@ -54,6 +57,9 @@ export function ExpenseForm({
   const count = inInstallments && canInstall ? Math.max(2, Number(installments) || 2) : 1;
   const effective = total / count;
 
+  const categoryDescription =
+    groups.flatMap((g) => g.categories).find((c) => c.id === categoryId)?.description ?? null;
+
   const envelopeId = groups.find((g) => g.categories.some((c) => c.id === categoryId))?.envelopeId;
   const envelope = advice?.envelopes.find((e) => e.id === envelopeId) ?? null;
 
@@ -67,7 +73,9 @@ export function ExpenseForm({
           card: advice.card,
           cycleEnd: advice.cycleEnd,
           nextCycleCommitted: advice.nextCycleCommitted,
-          nextBudget: advice.envelopes.reduce((sum, e) => sum + e.budget, 0),
+          nextBudget: advice.nextBase,
+          budgetsActive: advice.budgetsActive,
+          free: advice.free,
         })
       : null;
 
@@ -113,6 +121,8 @@ export function ExpenseForm({
           ))}
         </select>
       </label>
+
+      {categoryDescription && <p className="-mt-3 text-sm text-muted">{categoryDescription}</p>}
 
       <fieldset>
         <legend className="text-sm font-medium">Cómo pagaste</legend>

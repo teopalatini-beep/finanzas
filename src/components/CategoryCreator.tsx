@@ -54,6 +54,16 @@ export function CategoryCreator({ envelopes }: { envelopes: EnvelopeOption[] }) 
             </select>
           </label>
         </div>
+        <label className="block">
+          <span className="text-sm font-medium">¿Qué va ahí? (opcional)</span>
+          <input
+            name="description"
+            type="text"
+            maxLength={140}
+            placeholder="Ej: corte de pelo, barba, productos"
+            className={field}
+          />
+        </label>
         <p className="text-xs text-muted">
           El tipo se usa en Análisis para ver cuánto de tu sueldo va a necesidades y cuánto a gustos.
         </p>

@@ -1,4 +1,5 @@
 import { signOut } from "@/app/login/actions";
+import { BudgetsForm } from "@/components/BudgetsForm";
 import { SettingsForm } from "@/components/SettingsForm";
 import { getCardSettings } from "@/lib/cashflow";
 import { createClient } from "@/lib/supabase/server";
@@ -10,9 +11,30 @@ export default async function MasPage() {
   } = await supabase.auth.getUser();
   const card = await getCardSettings();
 
+  const [{ data: envelopes }, { data: settings }] = await Promise.all([
+    supabase.from("envelopes").select("id, name, emoji, monthly_amount").eq("is_fixed", false).order("sort_order"),
+    supabase.from("settings").select("budgets_from").maybeSingle(),
+  ]);
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Más</h1>
+
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <h2 className="font-medium">Presupuestos</h2>
+        <p className="mb-4 mt-1 text-sm text-muted">
+          Cuando termines de medir cuánto gastás en cada cosa, poné acá los montos de cada sobre y desde qué fecha rigen.
+        </p>
+        <BudgetsForm
+          envelopes={(envelopes ?? []).map((e) => ({
+            id: e.id,
+            name: e.name,
+            emoji: e.emoji ?? "💰",
+            amount: Number(e.monthly_amount),
+          }))}
+          budgetsFrom={settings?.budgets_from ?? null}
+        />
+      </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">
         <h2 className="font-medium">Ajustes</h2>
