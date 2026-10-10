@@ -1,19 +1,19 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionForm } from "@/components/useActionForm";
 import { signIn, type LoginState } from "./actions";
 
 const initial: LoginState = { error: null };
 
 export default function LoginPage() {
-  const [state, action, pending] = useActionState(signIn, initial);
+  const [state, onSubmit, pending] = useActionForm(signIn, initial);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6">
       <h1 className="text-3xl font-semibold tracking-tight">Finanzas</h1>
       <p className="mt-1 text-muted">Entrá para ver cuánto podés gastar.</p>
 
-      <form action={action} className="mt-8 space-y-4">
+      <form onSubmit={onSubmit} className="mt-8 space-y-4">
         <label className="block">
           <span className="text-sm font-medium">Email</span>
           <input
@@ -36,7 +36,7 @@ export default function LoginPage() {
         </label>
 
         {state.error && (
-          <p role="alert" className="text-sm font-medium text-over">
+          <p role="alert" className="text-sm font-medium text-over-fg">
             {state.error}
           </p>
         )}
@@ -44,7 +44,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={pending}
-          className="min-h-12 w-full rounded-xl bg-ok font-semibold text-white transition-opacity disabled:opacity-60"
+          className="min-h-12 w-full rounded-xl bg-ok-strong font-semibold text-white transition-opacity disabled:opacity-60"
         >
           {pending ? "Entrando…" : "Entrar"}
         </button>

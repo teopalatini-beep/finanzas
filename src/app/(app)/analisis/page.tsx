@@ -4,6 +4,7 @@ import { monthName, todayISO } from "@/lib/dates";
 import { formatARS, statusFor } from "@/lib/format";
 import { merchantKey, prettyName } from "@/lib/merchants";
 import { loadSavings } from "@/lib/savings-data";
+import { Panel } from "@/components/Panel";
 import { StatusBadge } from "@/components/StatusBadge";
 import { createClient } from "@/lib/supabase/server";
 
@@ -154,8 +155,7 @@ export default async function AnalisisPage() {
       </header>
 
       {/* 1. Sueldo repartido, en general y por detalle */}
-      <section className="rounded-2xl border border-border bg-surface p-4">
-        <h2 className="font-medium">Tu sueldo, repartido</h2>
+      <Panel title="Tu sueldo, repartido" defaultOpen>
 
         <div
           className="mt-3 flex h-4 overflow-hidden rounded-full bg-kind-free"
@@ -218,16 +218,15 @@ export default async function AnalisisPage() {
               <span className="block font-medium">{free >= 0 ? "Sin asignar" : "Te pasaste del sueldo"}</span>
               <span className="block text-sm text-muted">{pct(Math.abs(free), income)}% del sueldo</span>
             </span>
-            <span className={`font-semibold tabular-nums ${free < 0 ? "text-over" : ""}`}>
+            <span className={`font-semibold tabular-nums ${free < 0 ? "text-over-fg" : ""}`}>
               {free < 0 ? `−${formatARS(-free)}` : formatARS(free)}
             </span>
           </div>
         </div>
-      </section>
+      </Panel>
 
       {/* 2. En qué se va la plata */}
-      <section className="rounded-2xl border border-border bg-surface p-4">
-        <h2 className="font-medium">En qué se va la plata</h2>
+      <Panel title="En qué se va la plata" defaultOpen>
         <ul className="mt-3 space-y-3">
           {spending.length === 0 && <li className="text-sm text-muted">Todavía no hay gastos en este ciclo.</li>}
           {spending.map((i) => (
@@ -246,11 +245,10 @@ export default async function AnalisisPage() {
             </li>
           ))}
         </ul>
-      </section>
+      </Panel>
 
       {/* 3. Evolución mes a mes */}
-      <section className="rounded-2xl border border-border bg-surface p-4">
-        <h2 className="font-medium">Evolución, ciclo a ciclo</h2>
+      <Panel title="Evolución, ciclo a ciclo">
         {evolution.length < 2 ? (
           <p className="mt-2 text-sm text-muted">
             Para ver cómo evolucionás hacen falta al menos dos ciclos con gastos cargados. Subí el resumen del mes
@@ -293,12 +291,10 @@ export default async function AnalisisPage() {
             </p>
           </>
         )}
-      </section>
+      </Panel>
 
       {/* 4. Comercios donde más gastás */}
-      <section className="rounded-2xl border border-border bg-surface p-4">
-        <h2 className="font-medium">Comercios donde más gastás</h2>
-        <p className="text-sm text-muted">Últimos 3 ciclos, según lo que figura en tus resúmenes.</p>
+      <Panel title="Comercios donde más gastás" hint="Últimos 3 ciclos, según lo que figura en tus resúmenes.">
         <ul className="mt-3 space-y-3">
           {topMerchants.length === 0 && (
             <li className="text-sm text-muted">Todavía no hay comercios para mostrar.</li>
@@ -321,7 +317,7 @@ export default async function AnalisisPage() {
             </li>
           ))}
         </ul>
-      </section>
+      </Panel>
     </div>
   );
 }

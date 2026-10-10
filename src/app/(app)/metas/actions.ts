@@ -45,7 +45,7 @@ export async function addEntry(_prev: FormState, formData: FormData): Promise<Fo
     // Solo los aportes y retiros se asignan a una meta; el rendimiento queda sin asignar.
     goal_id: type !== "ajuste" && goalRaw ? goalRaw : null,
   });
-  if (error) return fail("No se pudo guardar el movimiento.");
+  if (error) return fail(`No se pudo guardar el movimiento (${error.message}).`);
 
   refresh();
   return done;
@@ -115,7 +115,7 @@ export async function createGoal(_prev: FormState, formData: FormData): Promise<
 
   const supabase = await createClient();
   const { error } = await supabase.from("goals").insert(parsed.values);
-  if (error) return fail("No se pudo crear la meta.");
+  if (error) return fail(`No se pudo crear la meta (${error.message}).`);
 
   refresh();
   return done;
@@ -129,7 +129,7 @@ export async function updateGoal(_prev: FormState, formData: FormData): Promise<
 
   const supabase = await createClient();
   const { error } = await supabase.from("goals").update(parsed.values).eq("id", id);
-  if (error) return fail("No se pudo guardar la meta.");
+  if (error) return fail(`No se pudo guardar la meta (${error.message}).`);
 
   refresh();
   return done;
@@ -159,7 +159,11 @@ export async function updateRate(_prev: FormState, formData: FormData): Promise<
 
 export async function updateMonthlyGoal(_prev: FormState, formData: FormData): Promise<FormState> {
   const usd = Number(formData.get("monthly_usd"));
+  const fxRaw = String(formData.get("reference_fx") ?? "").trim();
+  const fx = fxRaw === "" ? null : Number(fxRaw);
+
   if (!Number.isFinite(usd) || usd < 0) return fail("El objetivo no puede ser negativo.");
+  if (fx !== null && (!Number.isFinite(fx) || fx <= 0)) return fail("La cotización no es válida.");
 
   const supabase = await createClient();
   const {
@@ -168,9 +172,13 @@ export async function updateMonthlyGoal(_prev: FormState, formData: FormData): P
   if (!user) return fail("Tu sesión venció. Volvé a entrar.");
 
   // update (no upsert): no pisa el cierre ni el vencimiento de la tarjeta.
-  const { error } = await supabase.from("settings").update({ monthly_savings_usd: usd }).eq("user_id", user.id);
-  if (error) return fail("No se pudo guardar el objetivo.");
+  const { error } = await supabase
+    .from("settings")
+    .update({ monthly_savings_usd: usd, reference_fx: fx })
+    .eq("user_id", user.id);
+  if (error) return fail(`No se pudo guardar el objetivo (${error.message}).`);
 
   refresh();
+  revalidatePath("/", "layout");
   return done;
 }

@@ -47,7 +47,9 @@ export async function addExpense(_prev: ExpenseState, formData: FormData): Promi
     txAmount = Math.round((amount / installments) * 100) / 100;
   }
 
-  const { error } = await supabase.from("transactions").insert({
+  const { data: saved, error } = await supabase
+    .from("transactions")
+    .insert({
     occurred_on: date,
     amount: txAmount,
     description,
@@ -55,12 +57,15 @@ export async function addExpense(_prev: ExpenseState, formData: FormData): Promi
     payment_method_id: paymentMethodId,
     installment_plan_id: planId,
     installment_number: planId ? 1 : null,
-  });
-  if (error) return { error: "No se pudo guardar el gasto. Probá de nuevo." };
+    })
+    .select("id")
+    .single();
+  if (error || !saved) return { error: "No se pudo guardar el gasto. Probá de nuevo." };
 
   revalidatePath("/");
   revalidatePath("/gastos");
-  redirect("/");
+  // El id viaja en la dirección para ofrecer "Deshacer" en la pantalla de Hoy.
+  redirect(`/?guardado=${saved.id}`);
 }
 
 export async function deleteExpense(formData: FormData) {
@@ -90,6 +95,12 @@ export async function deleteExpense(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/gastos");
+}
+
+// Borra el gasto recién guardado (y su plan de cuotas, si quedó vacío) y vuelve a Hoy.
+export async function undoExpense(formData: FormData) {
+  await deleteExpense(formData);
+  redirect("/");
 }
 
 export type CategoryState = { error: string | null; ok: boolean };

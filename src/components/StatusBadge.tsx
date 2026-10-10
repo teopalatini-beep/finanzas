@@ -2,9 +2,9 @@ import { AlertTriangle, CheckCircle2, CircleAlert } from "lucide-react";
 import { STATUS_LABEL, type Status } from "@/lib/format";
 
 const styles = {
-  ok: { Icon: CheckCircle2, cls: "text-ok" },
-  warn: { Icon: AlertTriangle, cls: "text-warn" },
-  over: { Icon: CircleAlert, cls: "text-over" },
+  ok: { Icon: CheckCircle2, cls: "text-ok-fg" },
+  warn: { Icon: AlertTriangle, cls: "text-warn-fg" },
+  over: { Icon: CircleAlert, cls: "text-over-fg" },
 } as const;
 
 export function StatusBadge({ status }: { status: Status }) {

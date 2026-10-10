@@ -59,7 +59,7 @@ export default async function GastosPage() {
               key={i.description}
               className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4"
             >
-              <CalendarClock size={20} className="mt-0.5 text-warn" aria-hidden />
+              <CalendarClock size={20} className="mt-0.5 text-warn-fg" aria-hidden />
               <p className="text-sm">
                 <span className="font-medium">Cuotas:</span> {i.description}, {formatARS(i.perMonth)}/mes. Vas por la{" "}
                 {i.current} de {i.total}
@@ -73,7 +73,7 @@ export default async function GastosPage() {
       <div className="grid grid-cols-2 gap-2">
         <Link
           href="/gastos/nuevo"
-          className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-ok font-medium text-white"
+          className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-ok-strong font-medium text-white"
         >
           <PencilLine size={18} aria-hidden /> Cargar a mano
         </Link>

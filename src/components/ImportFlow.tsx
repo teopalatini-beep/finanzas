@@ -40,7 +40,7 @@ export function ImportFlow({ groups, methods }: { groups: Group[]; methods: Meth
           accept="application/pdf,image/jpeg,image/png,image/webp"
           multiple
           required
-          className="mt-1 block w-full rounded-xl border border-border bg-surface p-3 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-ok file:px-3 file:py-2 file:font-medium file:text-white"
+          className="mt-1 block w-full rounded-xl border border-border bg-surface p-3 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-ok-strong file:px-3 file:py-2 file:font-medium file:text-white"
         />
       </label>
 
@@ -60,7 +60,7 @@ export function ImportFlow({ groups, methods }: { groups: Group[]; methods: Meth
       </p>
 
       {state.status === "error" && (
-        <p role="alert" className="text-sm font-medium text-over">
+        <p role="alert" className="text-sm font-medium text-over-fg">
           {state.error}
         </p>
       )}
@@ -68,7 +68,7 @@ export function ImportFlow({ groups, methods }: { groups: Group[]; methods: Meth
       <button
         type="submit"
         disabled={pending}
-        className="min-h-12 w-full rounded-xl bg-ok font-semibold text-white transition-opacity disabled:opacity-60"
+        className="min-h-12 w-full rounded-xl bg-ok-strong font-semibold text-white transition-opacity disabled:opacity-60"
       >
         {pending ? "Leyendo el resumen… puede tardar un minuto" : "Leer resumen"}
       </button>
@@ -127,10 +127,10 @@ function Review({
           <span className="font-semibold tabular-nums">{formatARS(total)}</span>
         </p>
         {missingCategory && (
-          <p className="mt-1 text-sm font-medium text-warn">Falta elegir categoría en algún gasto.</p>
+          <p className="mt-1 text-sm font-medium text-warn-fg">Falta elegir categoría en algún gasto.</p>
         )}
         {saveState.error && (
-          <p role="alert" className="mt-1 text-sm font-medium text-over">
+          <p role="alert" className="mt-1 text-sm font-medium text-over-fg">
             {saveState.error}
           </p>
         )}
@@ -138,7 +138,7 @@ function Review({
         <button
           type="submit"
           disabled={saving || included.length === 0 || missingCategory}
-          className="mt-3 min-h-12 w-full rounded-xl bg-ok font-semibold text-white transition-opacity disabled:opacity-50"
+          className="mt-3 min-h-12 w-full rounded-xl bg-ok-strong font-semibold text-white transition-opacity disabled:opacity-50"
         >
           {saving ? "Guardando…" : "Confirmar y guardar"}
         </button>
@@ -186,12 +186,12 @@ function LineCard({
         </span>
       </label>
 
-      {isUSD && <p className="mt-1 text-sm text-warn">En dólares: por ahora la app solo maneja pesos.</p>}
+      {isUSD && <p className="mt-1 text-sm text-warn-fg">En dólares: por ahora la app solo maneja pesos.</p>}
       {line.kind === "pago_o_credito" && (
         <p className="mt-1 text-sm text-muted">Parece un pago o devolución, no un gasto.</p>
       )}
       {line.duplicate && (
-        <p className="mt-1 text-sm text-warn">Posible duplicado: ya hay un gasto con esa fecha y monto.</p>
+        <p className="mt-1 text-sm text-warn-fg">Posible duplicado: ya hay un gasto con esa fecha y monto.</p>
       )}
 
       {line.include && (

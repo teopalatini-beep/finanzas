@@ -49,8 +49,10 @@ export default async function MetasPage() {
         <p className="text-4xl font-semibold tabular-nums tracking-tight">{formatUSD(total)}</p>
         {data.lastFx && (
           <p className="text-sm text-muted">
-            ≈ {formatARS(total * data.lastFx.rate)} a la última cotización que cargaste (${data.lastFx.rate},{" "}
-            {longDate(data.lastFx.on)})
+            ≈ {formatARS(total * data.lastFx.rate)}{" "}
+            {data.lastFx.on
+              ? `a la última cotización que cargaste ($${data.lastFx.rate}, ${longDate(data.lastFx.on)})`
+              : `a tu cotización de referencia ($${data.lastFx.rate})`}
           </p>
         )}
       </header>
@@ -100,9 +102,9 @@ export default async function MetasPage() {
         )}
 
         <details className="mt-3 border-t border-border pt-3">
-          <summary className="min-h-10 cursor-pointer text-sm font-medium text-ok">Cambiar objetivo mensual</summary>
+          <summary className="min-h-10 cursor-pointer text-sm font-medium text-ok-fg">Cambiar objetivo mensual</summary>
           <div className="pt-2">
-            <MonthlyGoalForm value={monthly} />
+            <MonthlyGoalForm value={monthly} referenceFx={data.referenceFx} />
           </div>
         </details>
       </section>
@@ -136,7 +138,7 @@ export default async function MetasPage() {
               </div>
               <p className="text-sm text-muted">Rendimiento anual: {a.annualRate}% (lo cargás vos)</p>
               <details className="mt-1">
-                <summary className="min-h-9 cursor-pointer text-sm font-medium text-ok">Editar rendimiento</summary>
+                <summary className="min-h-9 cursor-pointer text-sm font-medium text-ok-fg">Editar rendimiento</summary>
                 <div className="pt-2">
                   <RateForm accountId={a.id} rate={a.annualRate} />
                 </div>
@@ -223,7 +225,7 @@ export default async function MetasPage() {
                 {v.targetNote && <li className="text-muted">{v.targetNote}</li>}
               </ul>
               <details className="mt-3 border-t border-border pt-2">
-                <summary className="min-h-9 cursor-pointer text-sm font-medium text-ok">Editar meta</summary>
+                <summary className="min-h-9 cursor-pointer text-sm font-medium text-ok-fg">Editar meta</summary>
                 <div className="pt-3">
                   <GoalEditForm
                     id={goal.id}
@@ -280,7 +282,7 @@ export default async function MetasPage() {
                     {e.note ? ` · ${e.note}` : ""}
                   </p>
                 </div>
-                <span className={`font-semibold tabular-nums ${e.amountUsd < 0 ? "text-over" : ""}`}>
+                <span className={`font-semibold tabular-nums ${e.amountUsd < 0 ? "text-over-fg" : ""}`}>
                   {e.amountUsd < 0 ? "−" : "+"}
                   {formatUSD2(Math.abs(e.amountUsd))}
                 </span>

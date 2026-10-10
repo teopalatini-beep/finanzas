@@ -1,22 +1,20 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { updateSettings, type SettingsState } from "@/app/(app)/mas/actions";
+import { useActionForm } from "@/components/useActionForm";
 import type { CardRules } from "@/lib/card-dates";
 
 const field =
   "mt-1 min-h-11 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-ok";
 
 export function SettingsForm({ card }: { card: CardRules }) {
-  const [state, action, pending] = useActionState<SettingsState, FormData>(updateSettings, {
-    error: null,
-    saved: false,
-  });
+  const [state, onSubmit, pending] = useActionForm<SettingsState>(updateSettings, { error: null, saved: false });
   const [closingMode, setClosingMode] = useState(card.closingDay ? "fixed" : "last_business_day");
   const [dueMode, setDueMode] = useState(card.dueBusinessDay ? "business_day" : "fixed");
 
   return (
-    <form action={action} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-4">
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">La Visa cierra</legend>
         <select
@@ -85,16 +83,16 @@ export function SettingsForm({ card }: { card: CardRules }) {
       <p className="text-xs text-muted">Los días hábiles son de lunes a viernes: todavía no cuento los feriados.</p>
 
       {state.error && (
-        <p role="alert" className="text-sm font-medium text-over">
+        <p role="alert" className="text-sm font-medium text-over-fg">
           {state.error}
         </p>
       )}
-      {state.saved && <p className="text-sm font-medium text-ok">Guardado.</p>}
+      {state.saved && <p className="text-sm font-medium text-ok-fg">Guardado.</p>}
 
       <button
         type="submit"
         disabled={pending}
-        className="min-h-11 rounded-xl bg-ok px-5 font-semibold text-white transition-opacity disabled:opacity-60"
+        className="min-h-11 rounded-xl bg-ok-strong px-5 font-semibold text-white transition-opacity disabled:opacity-60"
       >
         {pending ? "Guardando…" : "Guardar ajustes"}
       </button>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
+import { MoneyInput } from "@/components/MoneyInput";
+import { useActionForm } from "@/components/useActionForm";
 import {
   addEntry,
   createGoal,
@@ -14,7 +16,7 @@ const initial: FormState = { error: null, ok: false };
 const field =
   "mt-1 min-h-11 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-ok";
 const primary =
-  "min-h-11 w-full rounded-xl bg-ok px-5 font-semibold text-white transition-opacity disabled:opacity-60";
+  "min-h-11 w-full rounded-xl bg-ok-strong px-5 font-semibold text-white transition-opacity disabled:opacity-60";
 
 type AccountOption = { id: string; name: string };
 
@@ -31,11 +33,11 @@ function Feedback({ state, okText }: { state: FormState; okText: string }) {
   return (
     <>
       {state.error && (
-        <p role="alert" className="text-sm font-medium text-over">
+        <p role="alert" className="text-sm font-medium text-over-fg">
           {state.error}
         </p>
       )}
-      {state.ok && <p className="text-sm font-medium text-ok">{okText}</p>}
+      {state.ok && <p className="text-sm font-medium text-ok-fg">{okText}</p>}
     </>
   );
 }
@@ -55,12 +57,12 @@ export function EntryForm({
   today: string;
   lastFx: number | null;
 }) {
-  const [state, action, pending] = useActionState(addEntry, initial);
+  const [state, onSubmit, pending] = useActionForm(addEntry, initial);
   const ref = useResetOnSuccess(state);
   const [type, setType] = useState("aporte");
 
   return (
-    <form ref={ref} action={action} className="space-y-3">
+    <form ref={ref} onSubmit={onSubmit} className="space-y-3">
       <div className="flex gap-2" role="group" aria-label="Tipo de movimiento">
         {[
           ["aporte", "Aporte"],
@@ -73,7 +75,7 @@ export function EntryForm({
             aria-pressed={type === value}
             onClick={() => setType(value)}
             className={`min-h-10 flex-1 rounded-lg border text-sm font-medium ${
-              type === value ? "border-ok bg-ok text-white" : "border-border bg-background"
+              type === value ? "border-ok bg-ok-strong text-white" : "border-border bg-background"
             }`}
           >
             {label}
@@ -110,19 +112,16 @@ export function EntryForm({
       <div className="grid grid-cols-2 gap-3">
         <label className="block">
           <span className="text-sm font-medium">Monto en USD</span>
-          <input name="amount" type="number" step="any" inputMode="decimal" required className={field} />
+          <MoneyInput name="amount" required allowNegative={type === "ajuste"} className={field} />
         </label>
         <label className="block">
           <span className="text-sm font-medium">
             Cotización{type === "ajuste" ? " (opcional)" : ""}
           </span>
-          <input
+          <MoneyInput
             name="fx_rate"
-            type="number"
-            step="any"
-            inputMode="decimal"
-            placeholder={lastFx ? String(lastFx) : "$ por dólar"}
             required={type !== "ajuste"}
+            placeholder={lastFx ? String(lastFx) : "$ por dólar"}
             className={field}
           />
         </label>
@@ -315,11 +314,11 @@ function GoalFields({ defaults }: { defaults: GoalDefaults }) {
 }
 
 export function GoalForm() {
-  const [state, action, pending] = useActionState(createGoal, initial);
+  const [state, onSubmit, pending] = useActionForm(createGoal, initial);
   const ref = useResetOnSuccess(state);
 
   return (
-    <form ref={ref} action={action} className="space-y-3">
+    <form ref={ref} onSubmit={onSubmit} className="space-y-3">
       <GoalFields defaults={emptyGoal} />
       <Feedback state={state} okText="Meta creada." />
       <button type="submit" disabled={pending} className={primary}>
@@ -330,10 +329,10 @@ export function GoalForm() {
 }
 
 export function GoalEditForm({ id, defaults }: { id: string; defaults: GoalDefaults }) {
-  const [state, action, pending] = useActionState(updateGoal, initial);
+  const [state, onSubmit, pending] = useActionForm(updateGoal, initial);
 
   return (
-    <form action={action} className="space-y-3">
+    <form onSubmit={onSubmit} className="space-y-3">
       <input type="hidden" name="id" value={id} />
       <GoalFields defaults={defaults} />
       <Feedback state={state} okText="Cambios guardados." />
@@ -376,24 +375,43 @@ export function RateForm({ accountId, rate }: { accountId: string; rate: number 
   );
 }
 
-export function MonthlyGoalForm({ value }: { value: number }) {
+export function MonthlyGoalForm({ value, referenceFx }: { value: number; referenceFx: number | null }) {
   const [state, action, pending] = useActionState(updateMonthlyGoal, initial);
 
   return (
-    <form action={action} className="flex flex-wrap items-end gap-2">
-      <label className="block">
-        <span className="text-xs text-muted">Objetivo por mes (USD)</span>
-        <input
-          name="monthly_usd"
-          type="number"
-          step="any"
-          inputMode="decimal"
-          min="0"
-          defaultValue={value}
-          required
-          className="mt-1 min-h-10 w-28 rounded-xl border border-border bg-background px-3 outline-none focus:border-ok"
-        />
-      </label>
+    <form action={action} className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <label className="block">
+          <span className="text-xs text-muted">Objetivo por mes (USD)</span>
+          <input
+            name="monthly_usd"
+            type="number"
+            step="any"
+            inputMode="decimal"
+            min="0"
+            defaultValue={value}
+            required
+            className="mt-1 min-h-10 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-ok"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs text-muted">Cotización de referencia ($)</span>
+          <input
+            name="reference_fx"
+            type="number"
+            step="any"
+            inputMode="decimal"
+            min="0"
+            defaultValue={referenceFx ?? ""}
+            className="mt-1 min-h-10 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-ok"
+          />
+        </label>
+      </div>
+      <p className="text-xs text-muted">
+        La app pasa tu objetivo a pesos con esta cotización (o con la del último aporte que cargues) y lo descuenta de lo
+        que te queda libre.
+      </p>
+      <Feedback state={state} okText="Guardado." />
       <button
         type="submit"
         disabled={pending}
@@ -401,7 +419,6 @@ export function MonthlyGoalForm({ value }: { value: number }) {
       >
         {pending ? "…" : "Guardar"}
       </button>
-      <Feedback state={state} okText="Guardado." />
     </form>
   );
 }

@@ -10,6 +10,12 @@
   --ok: #2a9d8f;
   --warn: #e9a23b;
   --over: #e76f51;
+  /* Para TEXTO: más oscuros en modo claro, porque los de arriba no llegan a un contraste legible (AA 4.5). */
+  --ok-fg: #1c7468;
+  --warn-fg: #8f5b00;
+  --over-fg: #b23c20;
+  /* Fondo de botones con texto blanco. */
+  --ok-strong: #1c7468;
   /* Tipos de gasto: colores categóricos, sin carga de bueno/malo. */
   --kind-need: #4f7cac;
   --kind-want: #a77aa0;
@@ -27,6 +33,10 @@
     --kind-need: #6b9bc9;
     --kind-want: #c298bb;
     --kind-free: #3a434b;
+    /* En modo oscuro los colores originales ya contrastan bien con el fondo. */
+    --ok-fg: #2a9d8f;
+    --warn-fg: #e9a23b;
+    --over-fg: #e76f51;
   }
 }
 
@@ -39,6 +49,10 @@
   --color-ok: var(--ok);
   --color-warn: var(--warn);
   --color-over: var(--over);
+  --color-ok-fg: var(--ok-fg);
+  --color-warn-fg: var(--warn-fg);
+  --color-over-fg: var(--over-fg);
+  --color-ok-strong: var(--ok-strong);
   --color-kind-need: var(--kind-need);
   --color-kind-want: var(--kind-want);
   --color-kind-save: var(--kind-save);
@@ -50,4 +64,11 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Foco visible para quien navega con teclado o lector de pantalla.
+   Va fuera de las capas de Tailwind, así que gana sobre "outline-none". */
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--ok);
+  outline-offset: 2px;
 }

@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { addExpense, type ExpenseState } from "@/app/(app)/gastos/actions";
 import { adviceFor } from "@/lib/advice";
+import { MoneyInput } from "@/components/MoneyInput";
+import { useActionForm } from "@/components/useActionForm";
 import type { CardRules } from "@/lib/card-dates";
 
 type Group = {
@@ -26,7 +28,7 @@ export type AdviceContext = {
 const initial: ExpenseState = { error: null };
 const field =
   "mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 outline-none focus:border-ok";
-const tone = { ok: "text-ok", warn: "text-warn", over: "text-over" } as const;
+const tone = { ok: "text-ok-fg", warn: "text-warn-fg", over: "text-over-fg" } as const;
 
 export function ExpenseForm({
   groups,
@@ -39,7 +41,7 @@ export function ExpenseForm({
   today: string;
   advice: AdviceContext | null;
 }) {
-  const [state, action, pending] = useActionState(addExpense, initial);
+  const [state, onSubmit, pending] = useActionForm(addExpense, initial);
   const [amount, setAmount] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [date, setDate] = useState(today);
@@ -80,20 +82,15 @@ export function ExpenseForm({
       : null;
 
   return (
-    <form action={action} className="space-y-5">
+    <form onSubmit={onSubmit} className="space-y-5">
       <label className="block">
         <span className="text-sm font-medium">Monto</span>
-        <input
+        <MoneyInput
           name="amount"
-          type="number"
-          inputMode="decimal"
-          step="any"
-          min="1"
           required
           autoFocus
           placeholder="0"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onValueChange={setAmount}
           className="mt-1 min-h-14 w-full rounded-xl border border-border bg-surface px-3 text-3xl font-semibold tabular-nums outline-none focus:border-ok"
         />
       </label>
@@ -140,7 +137,7 @@ export function ExpenseForm({
                   if (m.type !== "tarjeta_credito") setInInstallments(false);
                 }}
                 className={`min-h-11 rounded-xl border px-4 text-sm font-medium ${
-                  selected ? "border-ok bg-ok text-white" : "border-border bg-surface"
+                  selected ? "border-ok bg-ok-strong text-white" : "border-border bg-surface"
                 }`}
               >
                 {m.name}
@@ -208,7 +205,7 @@ export function ExpenseForm({
       </div>
 
       {state.error && (
-        <p role="alert" className="text-sm font-medium text-over">
+        <p role="alert" className="text-sm font-medium text-over-fg">
           {state.error}
         </p>
       )}
@@ -216,7 +213,7 @@ export function ExpenseForm({
       <button
         type="submit"
         disabled={pending}
-        className="min-h-12 w-full rounded-xl bg-ok font-semibold text-white transition-opacity disabled:opacity-60"
+        className="min-h-12 w-full rounded-xl bg-ok-strong font-semibold text-white transition-opacity disabled:opacity-60"
       >
         {pending ? "Guardando…" : "Guardar gasto"}
       </button>

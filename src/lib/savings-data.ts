@@ -35,7 +35,9 @@ export type SavingsData = {
   monthlyGoalUsd: number;
   contribAccountId: string | null; // a dónde van los aportes nuevos por defecto
   contribGoalId: string | null; // para qué meta fue el último aporte
-  lastFx: { rate: number; on: string } | null;
+  // Cotización para pasar USD a pesos: la del último aporte que cargaste, o la de referencia si no hay ninguna.
+  lastFx: { rate: number; on: string | null } | null;
+  referenceFx: number | null;
 };
 
 export const toAccs = (accounts: Account[]): Acc[] =>
@@ -56,7 +58,7 @@ export async function loadSavings(): Promise<SavingsData> {
         "id, name, target_amount, target_months, expense_base, initial_amount, target_date, planned_monthly, planned_from, planned_until",
       )
       .order("created_at"),
-    supabase.from("settings").select("monthly_savings_usd").maybeSingle(),
+    supabase.from("settings").select("monthly_savings_usd, reference_fx").maybeSingle(),
   ]);
 
   const names = new Map((accs ?? []).map((a) => [a.id, a.name as string]));
@@ -81,6 +83,7 @@ export async function loadSavings(): Promise<SavingsData> {
 
   const lastAporte = entries.find((e) => e.type === "aporte");
   const lastWithFx = entries.find((e) => e.fxRate !== null);
+  const referenceFx = settings?.reference_fx ? Number(settings.reference_fx) : null;
 
   return {
     accounts,
@@ -100,6 +103,11 @@ export async function loadSavings(): Promise<SavingsData> {
     monthlyGoalUsd: Number(settings?.monthly_savings_usd ?? 0),
     contribAccountId: lastAporte?.accountId ?? accounts[0]?.id ?? null,
     contribGoalId: lastAporte?.goalId ?? null,
-    lastFx: lastWithFx ? { rate: lastWithFx.fxRate!, on: lastWithFx.occurredOn } : null,
+    lastFx: lastWithFx
+      ? { rate: lastWithFx.fxRate!, on: lastWithFx.occurredOn }
+      : referenceFx
+        ? { rate: referenceFx, on: null }
+        : null,
+    referenceFx,
   };
 }

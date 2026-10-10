@@ -99,7 +99,7 @@ export default async function ProyeccionPage({ searchParams }: { searchParams: S
             ))}
           </select>
         </label>
-        <button type="submit" className="min-h-11 w-full rounded-xl bg-ok font-semibold text-white">
+        <button type="submit" className="min-h-11 w-full rounded-xl bg-ok-strong font-semibold text-white">
           Calcular
         </button>
       </form>
@@ -121,7 +121,7 @@ export default async function ProyeccionPage({ searchParams }: { searchParams: S
           <div className="mt-1 flex justify-between text-xs text-muted">
             <span>Hoy</span>
             <span className="flex gap-3">
-              <span className="text-ok">━ proyectado</span>
+              <span className="text-ok-fg">━ proyectado</span>
               <span>╌ lo que ponés vos</span>
             </span>
           </div>

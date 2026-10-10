@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { createCategory, type CategoryState } from "@/app/(app)/gastos/actions";
+import { useActionForm } from "@/components/useActionForm";
 
 type EnvelopeOption = { envelopeId: string; envelope: string; emoji: string };
 
@@ -10,10 +11,7 @@ const field =
 
 // "¿Falta una categoría?": se crea acá y aparece enseguida en la lista de abajo.
 export function CategoryCreator({ envelopes }: { envelopes: EnvelopeOption[] }) {
-  const [state, action, pending] = useActionState<CategoryState, FormData>(createCategory, {
-    error: null,
-    ok: false,
-  });
+  const [state, onSubmit, pending] = useActionForm<CategoryState>(createCategory, { error: null, ok: false });
   const ref = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (state.ok) ref.current?.reset();
@@ -21,10 +19,10 @@ export function CategoryCreator({ envelopes }: { envelopes: EnvelopeOption[] }) 
 
   return (
     <details className="rounded-2xl border border-border bg-surface p-4">
-      <summary className="min-h-10 cursor-pointer text-sm font-medium text-ok">
+      <summary className="min-h-10 cursor-pointer text-sm font-medium text-ok-fg">
         ¿Falta una categoría? Crear una nueva
       </summary>
-      <form ref={ref} action={action} className="space-y-3 pt-3">
+      <form ref={ref} onSubmit={onSubmit} className="space-y-3 pt-3">
         <label className="block">
           <span className="text-sm font-medium">Nombre</span>
           <input name="name" type="text" maxLength={40} required placeholder="Ej: Peluquería" className={field} />
@@ -68,15 +66,15 @@ export function CategoryCreator({ envelopes }: { envelopes: EnvelopeOption[] }) 
           El tipo se usa en Análisis para ver cuánto de tu sueldo va a necesidades y cuánto a gustos.
         </p>
         {state.error && (
-          <p role="alert" className="text-sm font-medium text-over">
+          <p role="alert" className="text-sm font-medium text-over-fg">
             {state.error}
           </p>
         )}
-        {state.ok && <p className="text-sm font-medium text-ok">Categoría creada: ya la podés elegir.</p>}
+        {state.ok && <p className="text-sm font-medium text-ok-fg">Categoría creada: ya la podés elegir.</p>}
         <button
           type="submit"
           disabled={pending}
-          className="min-h-11 w-full rounded-xl bg-ok px-5 font-semibold text-white transition-opacity disabled:opacity-60"
+          className="min-h-11 w-full rounded-xl bg-ok-strong px-5 font-semibold text-white transition-opacity disabled:opacity-60"
         >
           {pending ? "Creando…" : "Crear categoría"}
         </button>
