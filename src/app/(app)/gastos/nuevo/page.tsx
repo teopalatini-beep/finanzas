@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CategoryCreator } from "@/components/CategoryCreator";
-import { ExpenseForm } from "@/components/ExpenseForm";
+import { NewExpense } from "@/components/NewExpense";
 import { getHoyData } from "@/lib/data";
 import { todayISO } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
@@ -52,7 +52,7 @@ export default async function NuevoGastoPage() {
         </Link>
       </header>
       <CategoryCreator envelopes={groups} />
-      <ExpenseForm groups={groups} methods={methods ?? []} today={todayISO()} advice={advice} />
+      <NewExpense groups={groups} methods={methods ?? []} today={todayISO()} advice={advice} />
     </div>
   );
 }

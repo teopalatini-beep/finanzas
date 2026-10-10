@@ -5,6 +5,7 @@ import { addExpense, type ExpenseState } from "@/app/(app)/gastos/actions";
 import { adviceFor } from "@/lib/advice";
 import { MoneyInput } from "@/components/MoneyInput";
 import { useActionForm } from "@/components/useActionForm";
+import type { SpokenDraft } from "@/lib/spoken-types";
 import type { CardRules } from "@/lib/card-dates";
 
 type Group = {
@@ -35,21 +36,25 @@ export function ExpenseForm({
   methods,
   today,
   advice,
+  draft = null,
 }: {
   groups: Group[];
   methods: Method[];
   today: string;
   advice: AdviceContext | null;
+  draft?: SpokenDraft | null; // lo que se interpretó de un dictado: completa el formulario
 }) {
   const [state, onSubmit, pending] = useActionForm(addExpense, initial);
-  const [amount, setAmount] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [date, setDate] = useState(today);
+  const draftAmount = draft?.amount ? String(draft.amount) : "";
+  const [amount, setAmount] = useState(draftAmount);
+  const [categoryId, setCategoryId] = useState(draft?.categoryId ?? "");
+  const [date, setDate] = useState(draft?.date ?? today);
   const [methodId, setMethodId] = useState(
-    (methods.find((m) => m.type === "efectivo") ?? methods[0])?.id ?? "",
+    draft?.methodId ?? (methods.find((m) => m.type === "efectivo") ?? methods[0])?.id ?? "",
   );
-  const [inInstallments, setInInstallments] = useState(false);
-  const [installments, setInstallments] = useState("3");
+  const draftCard = methods.find((m) => m.id === draft?.methodId)?.type === "tarjeta_credito";
+  const [inInstallments, setInInstallments] = useState(Boolean(draft?.installments) && draftCard);
+  const [installments, setInstallments] = useState(String(draft?.installments ?? 3));
 
   const method = methods.find((m) => m.id === methodId);
   const canInstall = method?.type === "tarjeta_credito";
@@ -87,8 +92,9 @@ export function ExpenseForm({
         <span className="text-sm font-medium">Monto</span>
         <MoneyInput
           name="amount"
+          initial={draftAmount}
           required
-          autoFocus
+          autoFocus={!draft}
           placeholder="0"
           onValueChange={setAmount}
           className="mt-1 min-h-14 w-full rounded-xl border border-border bg-surface px-3 text-3xl font-semibold tabular-nums outline-none focus:border-ok"
@@ -181,7 +187,14 @@ export function ExpenseForm({
 
       <label className="block">
         <span className="text-sm font-medium">Descripción (opcional)</span>
-        <input name="description" type="text" maxLength={120} placeholder="Ej: cena con amigos" className={field} />
+        <input
+          name="description"
+          type="text"
+          maxLength={120}
+          defaultValue={draft?.description ?? ""}
+          placeholder="Ej: cena con amigos"
+          className={field}
+        />
       </label>
 
       <label className="block">
