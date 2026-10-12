@@ -62,3 +62,12 @@ export function dueFor(closingISO: string, rules: CardRules) {
   const [ny, nm] = shift(y, m, 1);
   return mk(ny, nm, dueDay);
 }
+
+// Último cierre de tarjeta que ya ocurrió (en la fecha o antes).
+export function lastClosingOnOrBefore(dateISO: string, rules: CardRules) {
+  const [y, m] = dateISO.split("-").map(Number);
+  const thisMonth = closingIn(y, m, rules);
+  if (dateISO >= thisMonth) return thisMonth;
+  const [py, pm] = shift(y, m, -1);
+  return closingIn(py, pm, rules);
+}

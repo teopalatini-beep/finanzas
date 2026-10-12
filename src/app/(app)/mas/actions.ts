@@ -27,6 +27,19 @@ export async function updateSettings(_prev: SettingsState, formData: FormData): 
     return { error: "El día hábil de vencimiento tiene que estar entre 1 y 20.", saved: false };
   }
 
+  const minRaw = String(formData.get("visa_min") ?? "").trim();
+  const maxRaw = String(formData.get("visa_max") ?? "").trim();
+  const visaMin = minRaw ? Number(minRaw) : null;
+  const visaMax = maxRaw ? Number(maxRaw) : null;
+  if ((visaMin === null) !== (visaMax === null)) {
+    return { error: "Completá el mínimo y el máximo del resumen, o dejá los dos vacíos.", saved: false };
+  }
+  if (visaMin !== null && visaMax !== null) {
+    if (!Number.isFinite(visaMin) || !Number.isFinite(visaMax) || visaMin <= 0 || visaMax < visaMin) {
+      return { error: "El máximo del resumen tiene que ser mayor o igual al mínimo.", saved: false };
+    }
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -43,6 +56,13 @@ export async function updateSettings(_prev: SettingsState, formData: FormData): 
     })
     .eq("user_id", user.id);
   if (error) return { error: "No se pudieron guardar los ajustes.", saved: false };
+
+  // Aparte, para que el resto de los ajustes se guarde aunque falte correr la migración del rango.
+  const { error: visaError } = await supabase
+    .from("settings")
+    .update({ visa_typical_min: visaMin, visa_typical_max: visaMax })
+    .eq("user_id", user.id);
+  if (visaError) return { error: `No se pudo guardar el rango de la Visa: ${visaError.message}`, saved: false };
 
   // Cambia cuándo cae cada gasto con tarjeta, así que se recalculan todas las pantallas.
   revalidatePath("/", "layout");

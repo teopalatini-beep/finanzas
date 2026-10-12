@@ -19,6 +19,7 @@ export default async function MasPage() {
     supabase.from("envelopes").select("id, name, emoji, monthly_amount").eq("is_fixed", false).order("sort_order"),
     supabase.from("settings").select("budgets_from").maybeSingle(),
   ]);
+  const { data: visa } = await supabase.from("settings").select("visa_typical_min, visa_typical_max").maybeSingle();
 
   return (
     <div className="space-y-6">
@@ -51,7 +52,11 @@ export default async function MasPage() {
         <p className="mb-4 mt-1 text-sm text-muted">
           Con el cierre y el vencimiento de la Visa, la app sabe en qué ciclo se paga cada gasto con tarjeta. El objetivo de ahorro se cambia en Metas.
         </p>
-        <SettingsForm card={card} />
+        <SettingsForm
+          card={card}
+          visaMin={visa?.visa_typical_min != null ? Number(visa.visa_typical_min) : null}
+          visaMax={visa?.visa_typical_max != null ? Number(visa.visa_typical_max) : null}
+        />
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">

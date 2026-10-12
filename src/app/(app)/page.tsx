@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { ForecastCard } from "@/components/ForecastCard";
+import { VisaProjectionCard } from "@/components/VisaProjectionCard";
+import { StatementAlertCard } from "@/components/StatementAlertCard";
 import { UndoToast } from "@/components/UndoToast";
 import { getHoyData } from "@/lib/data";
 import { longDate } from "@/lib/dates";
@@ -25,7 +28,7 @@ export default async function HoyPage({ searchParams }: { searchParams: SearchPa
     );
   }
 
-  const { period, envelopes, todayExpenses, budgetsActive, budgetsFrom, free } = data;
+  const { period, envelopes, todayExpenses, budgetsActive, budgetsFrom, free, forecast, statementAlert, visaProjection } = data;
   const left = budgetsActive ? envelopes.reduce((sum, e) => sum + (e.budget - e.spent), 0) : free.amount;
 
   return (
@@ -74,6 +77,12 @@ export default async function HoyPage({ searchParams }: { searchParams: SearchPa
           </>
         )}
       </header>
+
+      {statementAlert && <StatementAlertCard alert={statementAlert} />}
+
+      <ForecastCard forecast={forecast} />
+
+      {visaProjection && <VisaProjectionCard projection={visaProjection} nextBase={data.nextBase} />}
 
       <section aria-label="Gastos de hoy" className="rounded-2xl border border-border bg-surface p-4">
         <div className="flex items-baseline justify-between">

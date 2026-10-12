@@ -1,6 +1,6 @@
 import { getCardSettings, loadTransactions, type CycleTx } from "@/lib/cashflow";
 import { previousCycles, type Cycle } from "@/lib/cycles";
-import { monthName, todayISO } from "@/lib/dates";
+import { addDays, monthName, todayISO } from "@/lib/dates";
 import { formatARS, statusFor } from "@/lib/format";
 import { merchantKey, prettyName } from "@/lib/merchants";
 import { loadSavings } from "@/lib/savings-data";
@@ -144,6 +144,31 @@ export default async function AnalisisPage() {
   const topMerchants = [...merchants.values()].sort((a, b) => b.total - a.total).slice(0, 8);
   const maxMerchant = Math.max(1, ...topMerchants.map((m) => m.total));
   const merchantsTotal = [...merchants.values()].reduce((s, m) => s + m.total, 0);
+
+  // ---- Pagos que se repiten (suscripciones y servicios): mismo comercio, monto parecido, en 2 o más meses ----
+  const since = addDays(today, -190);
+  const groupsByMerchant = new Map<string, { name: string; hits: { month: string; amount: number }[] }>();
+  for (const t of all) {
+    if (!t.description || t.installments_count !== null || t.kind === "ahorro" || t.envelopeIsFixed) continue;
+    if (t.occurred_on < since) continue;
+    const key = merchantKey(t.description);
+    if (!key) continue;
+    const g = groupsByMerchant.get(key) ?? { name: prettyName(t.description), hits: [] };
+    g.hits.push({ month: t.occurred_on.slice(0, 7), amount: t.amount });
+    groupsByMerchant.set(key, g);
+  }
+  const recurring = [...groupsByMerchant.values()]
+    .map((g) => {
+      const sorted = g.hits.map((h) => h.amount).sort((a, b) => a - b);
+      const median = sorted[Math.floor(sorted.length / 2)];
+      // Solo cuentan los cobros parecidos entre sí (±10%): un súper o un café de montos distintos no son una suscripción.
+      const months = new Set(g.hits.filter((h) => Math.abs(h.amount - median) <= median * 0.1).map((h) => h.month));
+      return { name: g.name, amount: median, months: months.size };
+    })
+    .filter((r) => r.months >= 2)
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 8);
+  const recurringTotal = recurring.reduce((sum, r) => sum + r.amount, 0);
 
   return (
     <div className="space-y-5">
@@ -317,6 +342,32 @@ export default async function AnalisisPage() {
             </li>
           ))}
         </ul>
+      </Panel>
+
+      {/* 5. Pagos que se repiten */}
+      <Panel title="Pagos que se repiten" hint="Suscripciones y servicios que aparecen todos los meses">
+        {recurring.length === 0 ? (
+          <p className="mt-2 text-sm text-muted">
+            Con dos o más meses de resúmenes cargados, acá aparecen los cobros que se repiten con un monto parecido.
+          </p>
+        ) : (
+          <>
+            <p className="mt-2 text-sm">
+              Suman unos <span className="font-medium">{formatARS(recurringTotal)}</span> por mes.
+            </p>
+            <ul className="mt-3 divide-y divide-border">
+              {recurring.map((r) => (
+                <li key={r.name} className="flex items-baseline justify-between gap-2 py-2 text-sm">
+                  <span className="min-w-0 truncate">{r.name}</span>
+                  <span className="shrink-0 text-right">
+                    <span className="font-medium tabular-nums">{formatARS(r.amount)}</span>
+                    <span className="block text-xs text-muted">en {r.months} meses</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </Panel>
     </div>
   );

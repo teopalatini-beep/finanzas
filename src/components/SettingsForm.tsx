@@ -8,7 +8,15 @@ import type { CardRules } from "@/lib/card-dates";
 const field =
   "mt-1 min-h-11 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-accent";
 
-export function SettingsForm({ card }: { card: CardRules }) {
+export function SettingsForm({
+  card,
+  visaMin,
+  visaMax,
+}: {
+  card: CardRules;
+  visaMin: number | null;
+  visaMax: number | null;
+}) {
   const [state, onSubmit, pending] = useActionForm<SettingsState>(updateSettings, { error: null, saved: false });
   const [closingMode, setClosingMode] = useState(card.closingDay ? "fixed" : "last_business_day");
   const [dueMode, setDueMode] = useState(card.dueBusinessDay ? "business_day" : "fixed");
@@ -78,6 +86,23 @@ export function SettingsForm({ card }: { card: CardRules }) {
             />
           </label>
         )}
+      </fieldset>
+
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">Resumen típico de la Visa</legend>
+        <p className="text-xs text-muted">
+          Cuánto suele venir tu resumen. Con esto la app estima el próximo, hasta que tenga suficientes resúmenes reales.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block">
+            <span className="text-xs text-muted">Mínimo ($)</span>
+            <input name="visa_min" type="number" inputMode="numeric" min="0" step="1000" defaultValue={visaMin ?? ""} className={field} />
+          </label>
+          <label className="block">
+            <span className="text-xs text-muted">Máximo ($)</span>
+            <input name="visa_max" type="number" inputMode="numeric" min="0" step="1000" defaultValue={visaMax ?? ""} className={field} />
+          </label>
+        </div>
       </fieldset>
 
       <p className="text-xs text-muted">Los días hábiles son de lunes a viernes: todavía no cuento los feriados.</p>
