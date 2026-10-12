@@ -40,6 +40,7 @@ export type HoyData = {
   // Lo que te queda libre: sueldo − fijos − ahorro − lo gastado en el ciclo.
   free: { amount: number; fixed: number; savings: number; spent: number };
   balance: BalanceData | null;
+  floor: number | null; // piso de seguridad que cargaste (o null)
   forecast: ForecastData;
   statementAlert: StatementAlert | null;
   visaProjection: VisaProjection | null;
@@ -193,6 +194,10 @@ export async function getHoyData(): Promise<HoyData | null> {
   const nextActive = !budgetsFrom || nextStart >= budgetsFrom;
   const freeAmount = income - fixedOffCard - savingsArs - spentCycle;
 
+  // Consulta aparte: si falta la migración del piso, nada más se rompe.
+  const { data: floorRow } = await supabase.from("settings").select("balance_floor").maybeSingle();
+  const floor = floorRow?.balance_floor != null ? Number(floorRow.balance_floor) : null;
+
   // ---- Tu saldo: sueldo cargado y todo lo que se fue restando ----
   const balance = await getBalance();
 
@@ -302,6 +307,7 @@ export async function getHoyData(): Promise<HoyData | null> {
     budgetsFrom,
     free: { amount: freeAmount, fixed: fixedOffCard, savings: savingsArs, spent: spentCycle },
     balance,
+    floor,
     forecast,
     statementAlert,
     visaProjection,

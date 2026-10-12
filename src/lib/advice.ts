@@ -1,3 +1,4 @@
+import { WARN_FROM } from "@/lib/format";
 import { dueFor, nextClosing, type CardRules } from "@/lib/card-dates";
 import { longDate } from "@/lib/dates";
 import { formatARS } from "@/lib/format";
@@ -31,7 +32,7 @@ export function adviceFor(i: AdviceInput): Advice | null {
       text:
         `Con la tarjeta se paga el ${longDate(payDate)}, en tu próximo ciclo. No baja lo que te queda hoy, ` +
         `pero ese ciclo ya tendría ${formatARS(committed)} comprometidos (${Math.round(share * 100)}% de tus ${formatARS(i.nextBudget)} libres).`,
-      tone: share > 1 ? "over" : share >= 0.7 ? "warn" : "ok",
+      tone: share > 1 ? "over" : share >= WARN_FROM ? "warn" : "ok",
     };
   }
 

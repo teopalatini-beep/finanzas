@@ -8,11 +8,14 @@ export const formatARS = (n: number) => ars.format(n);
 
 export type Status = "ok" | "warn" | "over";
 
+// Desde qué parte del tope se avisa que te estás acercando.
+export const WARN_FROM = 0.8;
+
 // Semáforo: siempre se muestra con ícono + texto, nunca solo color.
 export function statusFor(spent: number, budget: number): Status {
   const ratio = budget === 0 ? 0 : spent / budget;
   if (ratio > 1) return "over";
-  if (ratio >= 0.7) return "warn";
+  if (ratio >= WARN_FROM) return "warn";
   return "ok";
 }
 

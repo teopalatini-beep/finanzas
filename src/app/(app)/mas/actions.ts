@@ -90,6 +90,12 @@ export async function updateBudgets(_prev: BudgetsState, formData: FormData): Pr
     amounts.push({ id, amount });
   }
 
+  const floorRaw = String(formData.get("balance_floor") ?? "").trim();
+  const floor = floorRaw ? Number(floorRaw) : null;
+  if (floor !== null && (!Number.isFinite(floor) || floor < 0)) {
+    return { error: "El piso no puede ser negativo.", saved: false };
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -105,6 +111,10 @@ export async function updateBudgets(_prev: BudgetsState, formData: FormData): Pr
     .update({ budgets_from: fromRaw || null })
     .eq("user_id", user.id);
   if (error) return { error: "No se pudo guardar la fecha.", saved: false };
+
+  // Aparte: si falta la migración del piso, los topes igual se guardan.
+  const { error: floorError } = await supabase.from("settings").update({ balance_floor: floor }).eq("user_id", user.id);
+  if (floorError) return { error: `No se pudo guardar el piso: ${floorError.message}`, saved: false };
 
   revalidatePath("/", "layout");
   return { error: null, saved: true };

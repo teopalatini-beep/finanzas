@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { AlertsCard } from "@/components/AlertsCard";
 import { BalanceCard } from "@/components/BalanceCard";
 import { SalaryForm } from "@/components/SalaryBalanceForms";
 import { ForecastCard } from "@/components/ForecastCard";
 import { VisaProjectionCard } from "@/components/VisaProjectionCard";
 import { StatementAlertCard } from "@/components/StatementAlertCard";
 import { UndoToast } from "@/components/UndoToast";
+import { buildAlerts } from "@/lib/alerts";
 import { getHoyData } from "@/lib/data";
 import { longDate, todayISO } from "@/lib/dates";
 import { formatARS } from "@/lib/format";
@@ -46,6 +48,8 @@ export default async function HoyPage({ searchParams }: { searchParams: SearchPa
   }
 
   const { period, todayExpenses, forecast, statementAlert, visaProjection, balance } = data;
+
+  const alerts = buildAlerts(data, formatARS);
 
   return (
     <div className="space-y-4">
@@ -108,6 +112,8 @@ export default async function HoyPage({ searchParams }: { searchParams: SearchPa
       )}
 
       {!balance && <BalanceCard balance={null} />}
+
+      <AlertsCard alerts={alerts} />
 
       {statementAlert && <StatementAlertCard alert={statementAlert} />}
 

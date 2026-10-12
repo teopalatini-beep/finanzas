@@ -22,6 +22,7 @@ export default async function MasPage() {
     supabase.from("settings").select("budgets_from").maybeSingle(),
   ]);
   const { data: bal } = await supabase.from("settings").select("opening_balance, opening_balance_on").maybeSingle();
+  const { data: floorRow } = await supabase.from("settings").select("balance_floor").maybeSingle();
   const { data: visa } = await supabase.from("settings").select("visa_typical_min, visa_typical_max").maybeSingle();
 
   return (
@@ -55,9 +56,9 @@ export default async function MasPage() {
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">
-        <h2 className="font-medium">Presupuestos</h2>
+        <h2 className="font-medium">Topes y piso</h2>
         <p className="mb-4 mt-1 text-sm text-muted">
-          Cuando termines de medir cuánto gastás en cada cosa, poné acá los montos de cada sobre y desde qué fecha rigen.
+          Poné cuánto es lo máximo que querés gastar por mes en cada sobre y desde qué fecha rigen. La app te avisa cuando te acercás. También podés fijar un piso: lo mínimo que querés tener en la cuenta.
         </p>
         <BudgetsForm
           envelopes={(envelopes ?? []).map((e) => ({
@@ -67,6 +68,7 @@ export default async function MasPage() {
             amount: Number(e.monthly_amount),
           }))}
           budgetsFrom={settings?.budgets_from ?? null}
+          floor={floorRow?.balance_floor != null ? Number(floorRow.balance_floor) : null}
         />
       </section>
 
