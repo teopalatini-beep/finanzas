@@ -1,3 +1,4 @@
+import { AhorroTabs } from "@/components/AhorroTabs";
 import { addMonths, monthName, monthsBetween, todayISO } from "@/lib/dates";
 import { formatARS } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
@@ -43,6 +44,7 @@ export default async function CuotasPage() {
 
   return (
     <div className="space-y-5">
+      <AhorroTabs />
       <header>
         <h1 className="text-2xl font-semibold">Cuotas</h1>
         <p className="text-sm text-muted">

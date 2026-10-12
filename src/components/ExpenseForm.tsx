@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { addExpense, type ExpenseState } from "@/app/(app)/gastos/actions";
 import { adviceFor } from "@/lib/advice";
+import type { MemoryEntry } from "@/lib/expense-memory";
+import { merchantKey } from "@/lib/merchants";
 import { MoneyInput } from "@/components/MoneyInput";
 import { useActionForm } from "@/components/useActionForm";
 import type { SpokenDraft } from "@/lib/spoken-types";
@@ -37,12 +39,14 @@ export function ExpenseForm({
   today,
   advice,
   draft = null,
+  memory = [],
 }: {
   groups: Group[];
   methods: Method[];
   today: string;
   advice: AdviceContext | null;
   draft?: SpokenDraft | null; // lo que se interpretó de un dictado: completa el formulario
+  memory?: MemoryEntry[]; // lo que la app aprendió de tus gastos anteriores
 }) {
   const [state, onSubmit, pending] = useActionForm(addExpense, initial);
   const draftAmount = draft?.amount ? String(draft.amount) : "";
@@ -55,6 +59,30 @@ export function ExpenseForm({
   const draftCard = methods.find((m) => m.id === draft?.methodId)?.type === "tarjeta_credito";
   const [inInstallments, setInInstallments] = useState(Boolean(draft?.installments) && draftCard);
   const [installments, setInstallments] = useState(String(draft?.installments ?? 3));
+
+  const [description, setDescription] = useState(draft?.description ?? "");
+  // Si ya elegiste vos la categoría o el medio de pago, la app no los pisa.
+  const [categoryTouched, setCategoryTouched] = useState(Boolean(draft?.categoryId));
+  const [methodTouched, setMethodTouched] = useState(Boolean(draft?.methodId));
+  const [suggestion, setSuggestion] = useState<MemoryEntry | null>(null);
+
+  function applyMemory(entry: MemoryEntry) {
+    if (!categoryTouched) setCategoryId(entry.categoryId);
+    if (!methodTouched && methods.some((m) => m.id === entry.methodId)) {
+      setMethodId(entry.methodId);
+      if (methods.find((m) => m.id === entry.methodId)?.type !== "tarjeta_credito") setInInstallments(false);
+    }
+    setSuggestion(entry);
+  }
+
+  function onDescription(text: string) {
+    setDescription(text);
+    const key = merchantKey(text);
+    if (key.length < 2) return setSuggestion(null);
+    const entry = memory.find((m) => m.key === key) ?? (key.length >= 3 ? memory.find((m) => m.key.startsWith(key)) : undefined);
+    if (entry) applyMemory(entry);
+    else setSuggestion(null);
+  }
 
   const method = methods.find((m) => m.id === methodId);
   const canInstall = method?.type === "tarjeta_credito";
@@ -101,13 +129,48 @@ export function ExpenseForm({
         />
       </label>
 
+      <div>
+        <label className="block">
+          <span className="text-sm font-medium">¿En qué gastaste?</span>
+          <input
+            name="description"
+            type="text"
+            maxLength={120}
+            value={description}
+            onChange={(e) => onDescription(e.target.value)}
+            placeholder="Ej: Coto, nafta, cena con amigos"
+            className={field}
+          />
+        </label>
+        {memory.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2" aria-label="Tus gastos frecuentes">
+            {memory.slice(0, 6).map((m) => (
+              <button
+                key={m.key}
+                type="button"
+                onClick={() => {
+                  setDescription(m.label);
+                  applyMemory(m);
+                }}
+                className="min-h-9 rounded-full border border-border bg-surface px-3 text-sm"
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <label className="block">
         <span className="text-sm font-medium">Categoría</span>
         <select
           name="category_id"
           required
           value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
+          onChange={(e) => {
+            setCategoryId(e.target.value);
+            setCategoryTouched(true);
+          }}
           className={field}
         >
           <option value="" disabled>
@@ -125,6 +188,9 @@ export function ExpenseForm({
         </select>
       </label>
 
+      {suggestion && !categoryTouched && !methodTouched && (
+        <p className="-mt-3 text-sm text-muted">Sugerido por tus gastos anteriores. Cambialo si no es.</p>
+      )}
       {categoryDescription && <p className="-mt-3 text-sm text-muted">{categoryDescription}</p>}
 
       <fieldset>
@@ -140,6 +206,7 @@ export function ExpenseForm({
                 aria-pressed={selected}
                 onClick={() => {
                   setMethodId(m.id);
+                  setMethodTouched(true);
                   if (m.type !== "tarjeta_credito") setInInstallments(false);
                 }}
                 className={`min-h-11 rounded-xl border px-4 text-sm font-medium ${
@@ -184,18 +251,6 @@ export function ExpenseForm({
           )}
         </div>
       )}
-
-      <label className="block">
-        <span className="text-sm font-medium">Descripción (opcional)</span>
-        <input
-          name="description"
-          type="text"
-          maxLength={120}
-          defaultValue={draft?.description ?? ""}
-          placeholder="Ej: cena con amigos"
-          className={field}
-        />
-      </label>
 
       <label className="block">
         <span className="text-sm font-medium">Fecha</span>

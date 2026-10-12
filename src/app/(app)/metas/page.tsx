@@ -1,3 +1,4 @@
+import { AhorroTabs } from "@/components/AhorroTabs";
 import { ConfirmDelete } from "@/components/DeleteButtons";
 import { EntryForm, GoalEditForm, GoalForm, MonthlyGoalForm, RateForm } from "@/components/SavingsForms";
 import { previousCycles } from "@/lib/cycles";
@@ -43,6 +44,7 @@ export default async function MetasPage() {
 
   return (
     <div className="space-y-5">
+      <AhorroTabs />
       <header>
         <h1 className="text-2xl font-semibold">Metas</h1>
         <p className="mt-1 text-sm text-muted">Ahorro total</p>

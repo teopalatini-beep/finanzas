@@ -1,3 +1,4 @@
+import { AhorroTabs } from "@/components/AhorroTabs";
 import { ProjectionChart } from "@/components/ProjectionChart";
 import { addMonths, monthName, todayISO } from "@/lib/dates";
 import { formatARS, formatUSD } from "@/lib/format";
@@ -18,6 +19,7 @@ export default async function ProyeccionPage({ searchParams }: { searchParams: S
   if (data.accounts.length === 0) {
     return (
       <div className="space-y-2">
+        <AhorroTabs />
         <h1 className="text-2xl font-semibold">Proyección</h1>
         <p className="text-muted">Primero cargá tus cuentas de ahorro (corré migration_savings.sql).</p>
       </div>
@@ -46,6 +48,7 @@ export default async function ProyeccionPage({ searchParams }: { searchParams: S
 
   return (
     <div className="space-y-5">
+      <AhorroTabs />
       <header>
         <h1 className="text-2xl font-semibold">Proyección</h1>
         <p className="text-sm text-muted">

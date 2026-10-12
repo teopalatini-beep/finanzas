@@ -83,6 +83,29 @@ export default async function MasPage() {
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">
+        <h2 className="font-medium">Tus datos</h2>
+        <p className="mb-3 mt-1 text-sm text-muted">
+          Descargá una copia cuando quieras. Conviene hacerlo antes de borrar o cambiar muchas cosas.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href="/exportar?formato=json"
+            download
+            className="flex min-h-11 items-center rounded-xl border border-border px-4 font-medium"
+          >
+            Copia completa (JSON)
+          </a>
+          <a
+            href="/exportar?formato=csv"
+            download
+            className="flex min-h-11 items-center rounded-xl border border-border px-4 font-medium"
+          >
+            Gastos para Excel (CSV)
+          </a>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-4">
         <p className="text-sm text-muted">Sesión iniciada como</p>
         <p className="font-medium">{user?.email}</p>
         <form action={signOut} className="mt-4">

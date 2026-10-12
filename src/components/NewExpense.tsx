@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { ExpenseForm, type AdviceContext } from "@/components/ExpenseForm";
 import { VoiceEntry } from "@/components/VoiceEntry";
+import type { MemoryEntry } from "@/lib/expense-memory";
 import type { SpokenDraft } from "@/lib/spoken-types";
 
 type Group = Parameters<typeof ExpenseForm>[0]["groups"];
@@ -14,11 +15,13 @@ export function NewExpense({
   methods,
   today,
   advice,
+  memory,
 }: {
   groups: Group;
   methods: Methods;
   today: string;
   advice: AdviceContext | null;
+  memory: MemoryEntry[];
 }) {
   const [draft, setDraft] = useState<{ key: number; value: SpokenDraft } | null>(null);
   const onDraft = useCallback((key: number, value: SpokenDraft) => setDraft({ key, value }), []);
@@ -34,6 +37,7 @@ export function NewExpense({
         today={today}
         advice={advice}
         draft={draft?.value ?? null}
+        memory={memory}
       />
     </>
   );

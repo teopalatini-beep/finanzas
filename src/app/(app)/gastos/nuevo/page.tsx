@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CategoryCreator } from "@/components/CategoryCreator";
 import { NewExpense } from "@/components/NewExpense";
+import { loadExpenseMemory } from "@/lib/expense-memory";
 import { getHoyData } from "@/lib/data";
 import { todayISO } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
@@ -14,13 +15,14 @@ type EnvelopeRow = {
 
 export default async function NuevoGastoPage() {
   const supabase = await createClient();
-  const [{ data: envelopes }, { data: methods }, hoy] = await Promise.all([
+  const [{ data: envelopes }, { data: methods }, hoy, memory] = await Promise.all([
     supabase
       .from("envelopes")
       .select("id, name, emoji, categories(id, name, description)")
       .order("sort_order"),
     supabase.from("payment_methods").select("id, name, type").order("created_at"),
     getHoyData(),
+    loadExpenseMemory(),
   ]);
 
   const groups = ((envelopes ?? []) as EnvelopeRow[]).map((e) => ({
@@ -39,7 +41,7 @@ export default async function NuevoGastoPage() {
         nextCycleCommitted: hoy.nextCycleCommitted,
         nextBase: hoy.nextBase,
         budgetsActive: hoy.budgetsActive,
-        free: hoy.free.amount,
+        free: hoy.balance ? hoy.balance.balance : hoy.free.amount,
       }
     : null;
 
@@ -52,7 +54,7 @@ export default async function NuevoGastoPage() {
         </Link>
       </header>
       <CategoryCreator envelopes={groups} />
-      <NewExpense groups={groups} methods={methods ?? []} today={todayISO()} advice={advice} />
+      <NewExpense groups={groups} methods={methods ?? []} today={todayISO()} advice={advice} memory={memory} />
     </div>
   );
 }
