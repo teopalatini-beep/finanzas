@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { BalanceCard } from "@/components/BalanceCard";
 import { ForecastCard } from "@/components/ForecastCard";
 import { VisaProjectionCard } from "@/components/VisaProjectionCard";
 import { StatementAlertCard } from "@/components/StatementAlertCard";
 import { UndoToast } from "@/components/UndoToast";
+import { getBalance } from "@/lib/balance";
 import { getHoyData } from "@/lib/data";
 import { longDate } from "@/lib/dates";
 import { formatARS } from "@/lib/format";
@@ -15,7 +17,7 @@ export default async function HoyPage({ searchParams }: { searchParams: SearchPa
   const savedParam = Array.isArray(params.guardado) ? params.guardado[0] : params.guardado;
   const savedId = savedParam && isUUID(savedParam) ? savedParam : null;
 
-  const data = await getHoyData();
+  const [data, balance] = await Promise.all([getHoyData(), getBalance()]);
 
   if (!data || data.envelopes.length === 0) {
     return (
@@ -77,6 +79,8 @@ export default async function HoyPage({ searchParams }: { searchParams: SearchPa
           </>
         )}
       </header>
+
+      <BalanceCard balance={balance} />
 
       {statementAlert && <StatementAlertCard alert={statementAlert} />}
 

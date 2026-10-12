@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import { lastBusinessDay } from "@/lib/card-dates";
+import { addDays } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 
 export type SettingsState = { error: string | null; saved: boolean };
@@ -113,4 +115,60 @@ export async function setThemeCookie(theme: string) {
   if (theme !== "day" && theme !== "dark") return;
   (await cookies()).set("theme", theme, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
   revalidatePath("/", "layout");
+}
+
+export type SimpleState = { error: string | null; saved: boolean };
+
+const isDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+// Fija con cuánta plata arranca tu cuenta y desde qué día se descuentan los gastos.
+export async function saveOpeningBalance(_prev: SimpleState, formData: FormData): Promise<SimpleState> {
+  const balance = Number(formData.get("balance"));
+  const on = String(formData.get("on") ?? "");
+  if (!Number.isFinite(balance)) return { error: "Poné el saldo de tu cuenta.", saved: false };
+  if (!isDate(on)) return { error: "La fecha no es válida.", saved: false };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Tu sesión venció. Volvé a entrar.", saved: false };
+
+  const { error } = await supabase
+    .from("settings")
+    .update({ opening_balance: balance, opening_balance_on: on })
+    .eq("user_id", user.id);
+  if (error) return { error: `No se pudo guardar el saldo: ${error.message}`, saved: false };
+
+  revalidatePath("/", "layout");
+  return { error: null, saved: true };
+}
+
+// Registra un sueldo: crea el ciclo que arranca ese día (o corrige el sueldo si ya existe).
+// El ciclo termina el día anterior al próximo cobro (último día hábil del mes siguiente).
+export async function saveSalary(_prev: SimpleState, formData: FormData): Promise<SimpleState> {
+  const amount = Number(formData.get("amount"));
+  const on = String(formData.get("on") ?? "");
+  if (!isDate(on)) return { error: "La fecha no es válida.", saved: false };
+  if (!Number.isFinite(amount) || amount <= 0) return { error: "El sueldo tiene que ser mayor a cero.", saved: false };
+
+  const [y, m] = on.split("-").map(Number);
+  const nextPayday = m === 12 ? lastBusinessDay(y + 1, 1) : lastBusinessDay(y, m + 1);
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Tu sesión venció. Volvé a entrar.", saved: false };
+
+  const { error } = await supabase
+    .from("periods")
+    .upsert(
+      { user_id: user.id, start_date: on, end_date: addDays(nextPayday, -1), income: amount },
+      { onConflict: "user_id,start_date" },
+    );
+  if (error) return { error: `No se pudo guardar el sueldo: ${error.message}`, saved: false };
+
+  revalidatePath("/", "layout");
+  return { error: null, saved: true };
 }

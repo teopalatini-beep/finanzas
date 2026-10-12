@@ -18,12 +18,11 @@ export function VisaProjectionCard({ projection, nextBase }: { projection: VisaP
       </p>
       <p className="text-sm text-muted">Cierra el {longDate(p.closing)} y vence el {longDate(p.due)}.</p>
       <p className="mt-2 text-sm">
-        Ya cargaste <span className="font-medium">{formatARS(p.loaded)}</span> para ese resumen. Al próximo ciclo
-        llegarías con <span className="font-medium">{signed(nextBase - p.high)}</span> a{" "}
+        Al próximo ciclo llegarías con <span className="font-medium">{signed(nextBase - p.high)}</span> a{" "}
         <span className="font-medium">{signed(nextBase - p.low)}</span> libres para el resto de los gastos.
       </p>
       <p className="mt-1 text-xs text-muted">
-        El rango es el que cargaste en Más → Ajustes; si ya cargaste más que eso, se usa lo cargado.
+        Es el rango que cargaste en Más → Ajustes; no suma los gastos de tarjeta que ya subiste.
       </p>
     </section>
   );

@@ -1,9 +1,11 @@
 import { cookies } from "next/headers";
 import { signOut } from "@/app/login/actions";
 import { BudgetsForm } from "@/components/BudgetsForm";
+import { OpeningBalanceForm, SalaryForm } from "@/components/SalaryBalanceForms";
 import { SettingsForm } from "@/components/SettingsForm";
 import { ThemePicker } from "@/components/ThemePicker";
 import { getCardSettings } from "@/lib/cashflow";
+import { todayISO } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function MasPage() {
@@ -19,6 +21,7 @@ export default async function MasPage() {
     supabase.from("envelopes").select("id, name, emoji, monthly_amount").eq("is_fixed", false).order("sort_order"),
     supabase.from("settings").select("budgets_from").maybeSingle(),
   ]);
+  const { data: bal } = await supabase.from("settings").select("opening_balance, opening_balance_on").maybeSingle();
   const { data: visa } = await supabase.from("settings").select("visa_typical_min, visa_typical_max").maybeSingle();
 
   return (
@@ -29,6 +32,26 @@ export default async function MasPage() {
         <h2 className="font-medium">Apariencia</h2>
         <p className="mb-3 mt-1 text-sm text-muted">Elegí cómo querés ver la app.</p>
         <ThemePicker initial={theme} />
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <h2 className="font-medium">Saldo de tu cuenta</h2>
+        <p className="mb-4 mt-1 text-sm text-muted">
+          Poné lo que tenés hoy en el banco. Desde ahí la app va descontando cada gasto que cargues.
+        </p>
+        <OpeningBalanceForm
+          balance={bal?.opening_balance != null ? Number(bal.opening_balance) : null}
+          on={bal?.opening_balance_on ?? null}
+          today={todayISO()}
+        />
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <h2 className="font-medium">Cobré el sueldo</h2>
+        <p className="mb-4 mt-1 text-sm text-muted">
+          Cargalo el día que cobrás. Arranca un ciclo nuevo hasta el próximo cobro y suma a tu saldo.
+        </p>
+        <SalaryForm today={todayISO()} />
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">

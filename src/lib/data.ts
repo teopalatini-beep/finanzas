@@ -61,8 +61,8 @@ export type ForecastData =
       gustoCut: number; // cuánto sumarías si bajás los gustos un 10%
     };
 
-// Próximo resumen de la Visa: tu rango típico, corregido por lo que ya cargaste.
-export type VisaProjection = { low: number; high: number; loaded: number; closing: string; due: string; fromHistory: boolean };
+// Próximo resumen de la Visa: el rango típico que cargaste en Ajustes (no suma lo que ya subiste).
+export type VisaProjection = { low: number; high: number; closing: string; due: string; fromHistory: boolean };
 
 // El resumen de la tarjeta que cerró y todavía no subiste.
 export type StatementAlert = { closing: string; due: string; daysToDue: number };
@@ -252,12 +252,10 @@ export async function getHoyData(): Promise<HoyData | null> {
   if (visaRow?.visa_typical_min != null && visaRow?.visa_typical_max != null) {
     const typicalLow = Number(visaRow.visa_typical_min);
     const typicalHigh = Number(visaRow.visa_typical_max);
-    const loaded = nextCycle.amount;
     const closing = nextClosing(today, card);
     visaProjection = {
-      low: Math.max(typicalLow, loaded),
-      high: Math.max(typicalHigh, loaded),
-      loaded,
+      low: typicalLow,
+      high: typicalHigh,
       closing,
       due: dueFor(closing, card),
       fromHistory: false,
