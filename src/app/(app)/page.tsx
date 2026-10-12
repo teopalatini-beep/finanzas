@@ -85,13 +85,19 @@ export default async function HoyPage({ searchParams }: { searchParams: SearchPa
         ) : (
           <ul className="mt-2 divide-y divide-border">
             {todayExpenses.items.map((i) => (
-              <li key={i.id} className="flex items-center gap-3 py-2 text-sm">
-                <span aria-hidden>{i.emoji}</span>
-                <span className="min-w-0 flex-1 truncate">
-                  {i.title}
-                  {i.method && <span className="text-muted"> · {i.method}</span>}
-                </span>
-                <span className="font-medium tabular-nums">{formatARS(i.amount)}</span>
+              <li key={i.id}>
+                <Link
+                  href={`/gastos/editar/${i.id}`}
+                  aria-label={`Editar ${i.title}`}
+                  className="flex min-h-11 items-center gap-3 py-2 text-sm"
+                >
+                  <span aria-hidden>{i.emoji}</span>
+                  <span className="min-w-0 flex-1 truncate">
+                    {i.title}
+                    {i.method && <span className="text-muted"> · {i.method}</span>}
+                  </span>
+                  <span className="font-medium tabular-nums">{formatARS(i.amount)}</span>
+                </Link>
               </li>
             ))}
           </ul>

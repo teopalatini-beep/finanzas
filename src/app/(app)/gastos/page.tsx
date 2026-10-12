@@ -89,24 +89,27 @@ export default async function GastosPage() {
         {rows
           .sort((a, b) => (a.cashDate < b.cashDate ? 1 : -1))
           .map((r) => (
-            <li
-              key={r.id}
-              className="flex items-center gap-3 rounded-2xl border border-border bg-surface py-2 pl-4 pr-1"
-            >
-              <span className="text-xl" aria-hidden>
-                {r.emoji ?? "💰"}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{r.description ?? r.categoryName ?? "Gasto"}</p>
-                <p className="truncate text-sm text-muted">
-                  {r.isCard ? `Se paga el ${longDate(r.cashDate)}` : longDate(r.occurred_on)} · {r.categoryName} ·{" "}
-                  {r.paymentMethod}
-                  {r.installment_number && r.installments_count
-                    ? ` · cuota ${r.installment_number}/${r.installments_count}`
-                    : ""}
-                </p>
-              </div>
-              <p className="font-semibold tabular-nums">{formatARS(r.amount)}</p>
+            <li key={r.id} className="flex items-center rounded-2xl border border-border bg-surface pr-1">
+              <Link
+                href={`/gastos/editar/${r.id}`}
+                aria-label={`Editar ${r.description ?? r.categoryName ?? "gasto"}`}
+                className="flex min-w-0 flex-1 items-center gap-3 py-2 pl-4"
+              >
+                <span className="text-xl" aria-hidden>
+                  {r.emoji ?? "💰"}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{r.description ?? r.categoryName ?? "Gasto"}</p>
+                  <p className="truncate text-sm text-muted">
+                    {r.isCard ? `Se paga el ${longDate(r.cashDate)}` : longDate(r.occurred_on)} · {r.categoryName} ·{" "}
+                    {r.paymentMethod}
+                    {r.installment_number && r.installments_count
+                      ? ` · cuota ${r.installment_number}/${r.installments_count}`
+                      : ""}
+                  </p>
+                </div>
+                <p className="font-semibold tabular-nums">{formatARS(r.amount)}</p>
+              </Link>
               <DeleteExpenseButton id={r.id} />
             </li>
           ))}

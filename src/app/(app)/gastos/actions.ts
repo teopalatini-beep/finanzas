@@ -97,6 +97,53 @@ export async function deleteExpense(formData: FormData) {
   revalidatePath("/gastos");
 }
 
+// Guarda los cambios de un gasto existente.
+// Si el gasto es una cuota de una compra en cuotas, el monto y el medio de pago no se tocan:
+// cambiarlos en una sola cuota dejaría el plan inconsistente.
+export async function updateExpense(_prev: ExpenseState, formData: FormData): Promise<ExpenseState> {
+  const id = String(formData.get("id") ?? "");
+  const amount = Number(formData.get("amount"));
+  const date = String(formData.get("date") ?? "");
+  const categoryId = String(formData.get("category_id") ?? "");
+  const paymentMethodId = String(formData.get("payment_method_id") ?? "");
+  const description = String(formData.get("description") ?? "").trim() || null;
+
+  if (!isUUID(id)) return { error: "Ese gasto no es válido." };
+  if (!Number.isFinite(amount) || amount <= 0) return { error: "Ingresá un monto mayor a cero." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "La fecha no es válida." };
+  if (!isUUID(categoryId)) return { error: "Elegí una categoría." };
+  if (!isUUID(paymentMethodId)) return { error: "Elegí cómo pagaste." };
+
+  const supabase = await createClient();
+  const { data: current } = await supabase
+    .from("transactions")
+    .select("installment_plan_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (!current) return { error: "No encontré ese gasto. Puede que ya lo hayas borrado." };
+
+  const locked = Boolean(current.installment_plan_id);
+  const { error } = await supabase
+    .from("transactions")
+    .update({
+      occurred_on: date,
+      description,
+      category_id: categoryId,
+      ...(locked ? {} : { amount, payment_method_id: paymentMethodId }),
+    })
+    .eq("id", id);
+  if (error) return { error: `No se pudieron guardar los cambios (${error.message}).` };
+
+  revalidatePath("/", "layout");
+  redirect("/gastos");
+}
+
+// Borra un gasto desde su pantalla de edición y vuelve a la lista.
+export async function deleteExpenseAndBack(formData: FormData) {
+  await deleteExpense(formData);
+  redirect("/gastos");
+}
+
 // Borra el gasto recién guardado (y su plan de cuotas, si quedó vacío) y vuelve a Hoy.
 export async function undoExpense(formData: FormData) {
   await deleteExpense(formData);
