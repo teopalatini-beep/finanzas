@@ -22,7 +22,7 @@ export function UndoToast({ id }: { id: string }) {
       <span className="text-sm font-medium">Gasto guardado ✓</span>
       <form action={undoExpense}>
         <input type="hidden" name="id" value={id} />
-        <button type="submit" className="min-h-11 rounded-xl px-3 text-sm font-semibold text-ok-fg">
+        <button type="submit" className="min-h-11 rounded-xl px-3 text-sm font-semibold text-accent-fg">
           Deshacer
         </button>
       </form>

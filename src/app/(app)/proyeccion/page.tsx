@@ -67,7 +67,7 @@ export default async function ProyeccionPage({ searchParams }: { searchParams: S
               inputMode="decimal"
               min="0"
               defaultValue={aporte}
-              className="mt-1 min-h-11 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-ok"
+              className="mt-1 min-h-11 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-accent"
             />
           </label>
           <label className="block">
@@ -99,7 +99,7 @@ export default async function ProyeccionPage({ searchParams }: { searchParams: S
             ))}
           </select>
         </label>
-        <button type="submit" className="min-h-11 w-full rounded-xl bg-ok-strong font-semibold text-white">
+        <button type="submit" className="min-h-11 w-full rounded-xl bg-accent-strong font-semibold text-white">
           Calcular
         </button>
       </form>
@@ -121,7 +121,7 @@ export default async function ProyeccionPage({ searchParams }: { searchParams: S
           <div className="mt-1 flex justify-between text-xs text-muted">
             <span>Hoy</span>
             <span className="flex gap-3">
-              <span className="text-ok-fg">━ proyectado</span>
+              <span className="text-accent-fg">━ proyectado</span>
               <span>╌ lo que ponés vos</span>
             </span>
           </div>

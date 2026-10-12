@@ -73,7 +73,7 @@ export default async function GastosPage() {
       <div className="grid grid-cols-2 gap-2">
         <Link
           href="/gastos/nuevo"
-          className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-ok-strong font-medium text-white"
+          className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-accent-strong font-medium text-white"
         >
           <PencilLine size={18} aria-hidden /> Cargar a mano
         </Link>

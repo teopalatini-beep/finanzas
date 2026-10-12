@@ -1,42 +1,81 @@
 @import "tailwindcss";
 
-/* Paleta acordada (ver PRODUCT.md). Claro por defecto, oscuro según el sistema. */
-:root {
-  --background: #faf8f5;
+/*
+  Dos temas:
+    - Modo día     = "Navy y coral"  (claro)
+    - Modo oscuro  = "Noche azul"    (oscuro)
+  Si todavía no elegiste ninguno, la app sigue el modo de tu teléfono.
+  Los colores que se usan como TEXTO (-fg) son más oscuros en el modo día, para que se lean bien.
+*/
+:root,
+:root[data-theme="day"] {
+  color-scheme: light;
+  --background: #f4f6f5;
   --surface: #ffffff;
-  --foreground: #2b2f33;
-  --muted: #6b7280;
-  --border: #e8e4de;
-  --ok: #2a9d8f;
-  --warn: #e9a23b;
-  --over: #e76f51;
-  /* Para TEXTO: más oscuros en modo claro, porque los de arriba no llegan a un contraste legible (AA 4.5). */
-  --ok-fg: #1c7468;
+  --foreground: #14233c;
+  --muted: #5b6778;
+  --border: #e1e6e4;
+  /* Estados: relleno de barras y versión para texto */
+  --ok: #0e9384;
+  --warn: #d4880f;
+  --over: #d9533a;
+  --ok-fg: #0b7a70;
   --warn-fg: #8f5b00;
-  --over-fg: #b23c20;
-  /* Fondo de botones con texto blanco. */
-  --ok-strong: #1c7468;
-  /* Tipos de gasto: colores categóricos, sin carga de bueno/malo. */
-  --kind-need: #4f7cac;
-  --kind-want: #a77aa0;
-  --kind-save: #2a9d8f;
-  --kind-free: #c9c4bb;
+  --over-fg: #b63a27;
+  /* Color de acción: botones, links, pestaña activa, foco */
+  --accent: #14233c;
+  --accent-fg: #1d4ed8;
+  --accent-strong: #14233c;
+  /* Tipos de gasto: categóricos, sin carga de bueno o malo */
+  --kind-need: #3b5ba5;
+  --kind-want: #d65fb0;
+  --kind-save: #0e9384;
+  --kind-free: #d5dcd9;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #060e1f;
+  --surface: #0e1a33;
+  --foreground: #eaf0ff;
+  --muted: #8a98b5;
+  --border: #1b2a4a;
+  --ok: #3ed598;
+  --warn: #f2c14e;
+  --over: #ff6b5a;
+  --ok-fg: #3ed598;
+  --warn-fg: #f2c14e;
+  --over-fg: #ff6b5a;
+  --accent: #4f8cff;
+  --accent-fg: #7fa8ff;
+  --accent-strong: #2a62f0;
+  --kind-need: #4f8cff;
+  --kind-want: #b58cff;
+  --kind-save: #3ed598;
+  --kind-free: #1b2a4a;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #14181c;
-    --surface: #1d2328;
-    --foreground: #eceae6;
-    --muted: #9aa3ad;
-    --border: #2a3239;
-    --kind-need: #6b9bc9;
-    --kind-want: #c298bb;
-    --kind-free: #3a434b;
-    /* En modo oscuro los colores originales ya contrastan bien con el fondo. */
-    --ok-fg: #2a9d8f;
-    --warn-fg: #e9a23b;
-    --over-fg: #e76f51;
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --background: #060e1f;
+    --surface: #0e1a33;
+    --foreground: #eaf0ff;
+    --muted: #8a98b5;
+    --border: #1b2a4a;
+    --ok: #3ed598;
+    --warn: #f2c14e;
+    --over: #ff6b5a;
+    --ok-fg: #3ed598;
+    --warn-fg: #f2c14e;
+    --over-fg: #ff6b5a;
+    --accent: #4f8cff;
+    --accent-fg: #7fa8ff;
+    --accent-strong: #2a62f0;
+    --kind-need: #4f8cff;
+    --kind-want: #b58cff;
+    --kind-save: #3ed598;
+    --kind-free: #1b2a4a;
   }
 }
 
@@ -52,7 +91,9 @@
   --color-ok-fg: var(--ok-fg);
   --color-warn-fg: var(--warn-fg);
   --color-over-fg: var(--over-fg);
-  --color-ok-strong: var(--ok-strong);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-strong: var(--accent-strong);
   --color-kind-need: var(--kind-need);
   --color-kind-want: var(--kind-want);
   --color-kind-save: var(--kind-save);
@@ -69,6 +110,6 @@ body {
 /* Foco visible para quien navega con teclado o lector de pantalla.
    Va fuera de las capas de Tailwind, así que gana sobre "outline-none". */
 :where(a, button, input, select, textarea, summary):focus-visible {
-  outline: 2px solid var(--ok);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }

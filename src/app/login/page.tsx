@@ -21,7 +21,7 @@ export default function LoginPage() {
             type="email"
             autoComplete="email"
             required
-            className="mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 outline-none focus:border-ok"
+            className="mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 outline-none focus:border-accent"
           />
         </label>
         <label className="block">
@@ -31,7 +31,7 @@ export default function LoginPage() {
             type="password"
             autoComplete="current-password"
             required
-            className="mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 outline-none focus:border-ok"
+            className="mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 outline-none focus:border-accent"
           />
         </label>
 
@@ -44,7 +44,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={pending}
-          className="min-h-12 w-full rounded-xl bg-ok-strong font-semibold text-white transition-opacity disabled:opacity-60"
+          className="min-h-12 w-full rounded-xl bg-accent-strong font-semibold text-white transition-opacity disabled:opacity-60"
         >
           {pending ? "Entrando…" : "Entrar"}
         </button>

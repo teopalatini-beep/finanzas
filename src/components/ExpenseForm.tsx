@@ -28,7 +28,7 @@ export type AdviceContext = {
 
 const initial: ExpenseState = { error: null };
 const field =
-  "mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 outline-none focus:border-ok";
+  "mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 outline-none focus:border-accent";
 const tone = { ok: "text-ok-fg", warn: "text-warn-fg", over: "text-over-fg" } as const;
 
 export function ExpenseForm({
@@ -97,7 +97,7 @@ export function ExpenseForm({
           autoFocus={!draft}
           placeholder="0"
           onValueChange={setAmount}
-          className="mt-1 min-h-14 w-full rounded-xl border border-border bg-surface px-3 text-3xl font-semibold tabular-nums outline-none focus:border-ok"
+          className="mt-1 min-h-14 w-full rounded-xl border border-border bg-surface px-3 text-3xl font-semibold tabular-nums outline-none focus:border-accent"
         />
       </label>
 
@@ -143,7 +143,7 @@ export function ExpenseForm({
                   if (m.type !== "tarjeta_credito") setInInstallments(false);
                 }}
                 className={`min-h-11 rounded-xl border px-4 text-sm font-medium ${
-                  selected ? "border-ok bg-ok-strong text-white" : "border-border bg-surface"
+                  selected ? "border-accent bg-accent-strong text-white" : "border-border bg-surface"
                 }`}
               >
                 {m.name}
@@ -160,7 +160,7 @@ export function ExpenseForm({
               type="checkbox"
               checked={inInstallments}
               onChange={(e) => setInInstallments(e.target.checked)}
-              className="size-5 accent-[var(--ok)]"
+              className="size-5 accent-[var(--accent)]"
             />
             <span className="text-sm font-medium">¿En cuotas?</span>
           </label>
@@ -226,7 +226,7 @@ export function ExpenseForm({
       <button
         type="submit"
         disabled={pending}
-        className="min-h-12 w-full rounded-xl bg-ok-strong font-semibold text-white transition-opacity disabled:opacity-60"
+        className="min-h-12 w-full rounded-xl bg-accent-strong font-semibold text-white transition-opacity disabled:opacity-60"
       >
         {pending ? "Guardando…" : "Guardar gasto"}
       </button>

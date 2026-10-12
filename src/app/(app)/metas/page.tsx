@@ -102,7 +102,7 @@ export default async function MetasPage() {
         )}
 
         <details className="mt-3 border-t border-border pt-3">
-          <summary className="min-h-10 cursor-pointer text-sm font-medium text-ok-fg">Cambiar objetivo mensual</summary>
+          <summary className="min-h-10 cursor-pointer text-sm font-medium text-accent-fg">Cambiar objetivo mensual</summary>
           <div className="pt-2">
             <MonthlyGoalForm value={monthly} referenceFx={data.referenceFx} />
           </div>
@@ -138,7 +138,7 @@ export default async function MetasPage() {
               </div>
               <p className="text-sm text-muted">Rendimiento anual: {a.annualRate}% (lo cargás vos)</p>
               <details className="mt-1">
-                <summary className="min-h-9 cursor-pointer text-sm font-medium text-ok-fg">Editar rendimiento</summary>
+                <summary className="min-h-9 cursor-pointer text-sm font-medium text-accent-fg">Editar rendimiento</summary>
                 <div className="pt-2">
                   <RateForm accountId={a.id} rate={a.annualRate} />
                 </div>
@@ -225,7 +225,7 @@ export default async function MetasPage() {
                 {v.targetNote && <li className="text-muted">{v.targetNote}</li>}
               </ul>
               <details className="mt-3 border-t border-border pt-2">
-                <summary className="min-h-9 cursor-pointer text-sm font-medium text-ok-fg">Editar meta</summary>
+                <summary className="min-h-9 cursor-pointer text-sm font-medium text-accent-fg">Editar meta</summary>
                 <div className="pt-3">
                   <GoalEditForm
                     id={goal.id}

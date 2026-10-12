@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Cuánto podés gastar sin romper el mes",
     start_url: "/",
     display: "standalone",
-    background_color: "#faf8f5",
-    theme_color: "#2a9d8f",
+    background_color: "#060e1f",
+    theme_color: "#060e1f",
     icons: [{ src: "/icon", sizes: "512x512", type: "image/png" }],
   };
 }

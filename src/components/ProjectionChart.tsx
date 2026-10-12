@@ -21,10 +21,10 @@ export function ProjectionChart({ points, start }: { points: Point[]; start: num
       role="img"
       aria-label={`Ahorro proyectado: de ${Math.round(points[0].total)} a ${Math.round(last.total)} dólares en ${last.month} meses`}
     >
-      <polygon points={area} fill="var(--ok)" opacity="0.14" />
+      <polygon points={area} fill="var(--accent)" opacity="0.14" />
       <polyline points={own} fill="none" stroke="var(--muted)" strokeWidth="1.5" strokeDasharray="4 3" />
-      <polyline points={total} fill="none" stroke="var(--ok)" strokeWidth="2.5" strokeLinejoin="round" />
-      <circle cx={x(last.month)} cy={y(last.total)} r="3.5" fill="var(--ok)" />
+      <polyline points={total} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinejoin="round" />
+      <circle cx={x(last.month)} cy={y(last.total)} r="3.5" fill="var(--accent)" />
     </svg>
   );
 }

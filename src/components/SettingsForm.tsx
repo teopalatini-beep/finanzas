@@ -6,7 +6,7 @@ import { useActionForm } from "@/components/useActionForm";
 import type { CardRules } from "@/lib/card-dates";
 
 const field =
-  "mt-1 min-h-11 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-ok";
+  "mt-1 min-h-11 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-accent";
 
 export function SettingsForm({ card }: { card: CardRules }) {
   const [state, onSubmit, pending] = useActionForm<SettingsState>(updateSettings, { error: null, saved: false });
@@ -92,7 +92,7 @@ export function SettingsForm({ card }: { card: CardRules }) {
       <button
         type="submit"
         disabled={pending}
-        className="min-h-11 rounded-xl bg-ok-strong px-5 font-semibold text-white transition-opacity disabled:opacity-60"
+        className="min-h-11 rounded-xl bg-accent-strong px-5 font-semibold text-white transition-opacity disabled:opacity-60"
       >
         {pending ? "Guardando…" : "Guardar ajustes"}
       </button>

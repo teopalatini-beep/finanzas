@@ -14,9 +14,9 @@ import {
 
 const initial: FormState = { error: null, ok: false };
 const field =
-  "mt-1 min-h-11 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-ok";
+  "mt-1 min-h-11 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-accent";
 const primary =
-  "min-h-11 w-full rounded-xl bg-ok-strong px-5 font-semibold text-white transition-opacity disabled:opacity-60";
+  "min-h-11 w-full rounded-xl bg-accent-strong px-5 font-semibold text-white transition-opacity disabled:opacity-60";
 
 type AccountOption = { id: string; name: string };
 
@@ -75,7 +75,7 @@ export function EntryForm({
             aria-pressed={type === value}
             onClick={() => setType(value)}
             className={`min-h-10 flex-1 rounded-lg border text-sm font-medium ${
-              type === value ? "border-ok bg-ok-strong text-white" : "border-border bg-background"
+              type === value ? "border-accent bg-accent-strong text-white" : "border-border bg-background"
             }`}
           >
             {label}
@@ -211,7 +211,7 @@ function GoalFields({ defaults }: { defaults: GoalDefaults }) {
               aria-pressed={goalType === value}
               onClick={() => setGoalType(value)}
               className={`rounded-xl border p-3 text-left ${
-                goalType === value ? "border-ok bg-ok/10" : "border-border bg-background"
+                goalType === value ? "border-accent bg-accent/10" : "border-border bg-background"
               }`}
             >
               <span className="block text-sm font-medium">{label}</span>
@@ -360,7 +360,7 @@ export function RateForm({ accountId, rate }: { accountId: string; rate: number 
           max="100"
           defaultValue={rate}
           required
-          className="mt-1 min-h-10 w-28 rounded-xl border border-border bg-background px-3 outline-none focus:border-ok"
+          className="mt-1 min-h-10 w-28 rounded-xl border border-border bg-background px-3 outline-none focus:border-accent"
         />
       </label>
       <button
@@ -391,7 +391,7 @@ export function MonthlyGoalForm({ value, referenceFx }: { value: number; referen
             min="0"
             defaultValue={value}
             required
-            className="mt-1 min-h-10 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-ok"
+            className="mt-1 min-h-10 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-accent"
           />
         </label>
         <label className="block">
@@ -403,7 +403,7 @@ export function MonthlyGoalForm({ value, referenceFx }: { value: number; referen
             inputMode="decimal"
             min="0"
             defaultValue={referenceFx ?? ""}
-            className="mt-1 min-h-10 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-ok"
+            className="mt-1 min-h-10 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-accent"
           />
         </label>
       </div>

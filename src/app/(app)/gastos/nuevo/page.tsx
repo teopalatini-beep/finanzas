@@ -47,7 +47,7 @@ export default async function NuevoGastoPage() {
     <div className="space-y-5">
       <header>
         <h1 className="text-2xl font-semibold">Nuevo gasto</h1>
-        <Link href="/gastos/importar" className="text-sm font-medium text-ok-fg underline underline-offset-2">
+        <Link href="/gastos/importar" className="text-sm font-medium text-accent-fg underline underline-offset-2">
           ¿Tenés un PDF o fotos? Subilos en vez de cargar a mano
         </Link>
       </header>

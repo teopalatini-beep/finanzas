@@ -13,7 +13,7 @@ export function AddButton() {
     <Link
       href="/gastos/nuevo"
       aria-label="Cargar gasto"
-      className="fixed bottom-6 right-4 z-10 flex size-14 items-center justify-center rounded-full bg-ok-strong text-white shadow-lg"
+      className="fixed bottom-6 right-4 z-10 flex size-14 items-center justify-center rounded-full bg-accent-strong text-white shadow-lg"
     >
       <Plus size={28} aria-hidden />
     </Link>

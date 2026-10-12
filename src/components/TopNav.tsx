@@ -31,7 +31,7 @@ export function TopNav() {
                 aria-current={active ? "page" : undefined}
                 className={`flex min-h-12 items-center border-b-2 px-3 text-sm ${
                   active
-                    ? "border-ok font-semibold text-foreground"
+                    ? "border-accent font-semibold text-foreground"
                     : "border-transparent text-muted"
                 }`}
               >

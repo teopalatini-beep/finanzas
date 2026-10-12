@@ -37,13 +37,13 @@ export function VoiceEntry({ onDraft }: { onDraft: (key: number, draft: SpokenDr
             maxLength={500}
             required
             placeholder="Ej: ayer gasté 20 lucas en el súper en efectivo"
-            className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2 outline-none focus:border-ok"
+            className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2 outline-none focus:border-accent"
           />
         </label>
         <button
           type="submit"
           disabled={pending}
-          className="min-h-11 w-full rounded-xl bg-ok-strong font-semibold text-white transition-opacity disabled:opacity-60"
+          className="min-h-11 w-full rounded-xl bg-accent-strong font-semibold text-white transition-opacity disabled:opacity-60"
         >
           {pending ? "Interpretando…" : "Completar el formulario"}
         </button>

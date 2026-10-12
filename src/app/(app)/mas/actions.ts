@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 
 export type SettingsState = { error: string | null; saved: boolean };
@@ -85,4 +86,11 @@ export async function updateBudgets(_prev: BudgetsState, formData: FormData): Pr
 
   revalidatePath("/", "layout");
   return { error: null, saved: true };
+}
+
+// Guarda el tema elegido (modo día o modo oscuro) en una cookie, para que el servidor lo conozca desde la primera carga.
+export async function setThemeCookie(theme: string) {
+  if (theme !== "day" && theme !== "dark") return;
+  (await cookies()).set("theme", theme, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
+  revalidatePath("/", "layout");
 }

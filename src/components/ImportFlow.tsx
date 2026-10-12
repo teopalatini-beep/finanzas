@@ -14,7 +14,7 @@ type Group = {
 type Method = { id: string; name: string; type: string };
 
 const field =
-  "mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 outline-none focus:border-ok";
+  "mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 outline-none focus:border-accent";
 
 export function ImportFlow({ groups, methods }: { groups: Group[]; methods: Method[] }) {
   const [state, action, pending] = useActionState<ParseState, FormData>(parseStatement, {
@@ -40,7 +40,7 @@ export function ImportFlow({ groups, methods }: { groups: Group[]; methods: Meth
           accept="application/pdf,image/jpeg,image/png,image/webp"
           multiple
           required
-          className="mt-1 block w-full rounded-xl border border-border bg-surface p-3 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-ok-strong file:px-3 file:py-2 file:font-medium file:text-white"
+          className="mt-1 block w-full rounded-xl border border-border bg-surface p-3 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-accent-strong file:px-3 file:py-2 file:font-medium file:text-white"
         />
       </label>
 
@@ -68,7 +68,7 @@ export function ImportFlow({ groups, methods }: { groups: Group[]; methods: Meth
       <button
         type="submit"
         disabled={pending}
-        className="min-h-12 w-full rounded-xl bg-ok-strong font-semibold text-white transition-opacity disabled:opacity-60"
+        className="min-h-12 w-full rounded-xl bg-accent-strong font-semibold text-white transition-opacity disabled:opacity-60"
       >
         {pending ? "Leyendo el resumen… puede tardar un minuto" : "Leer resumen"}
       </button>
@@ -138,7 +138,7 @@ function Review({
         <button
           type="submit"
           disabled={saving || included.length === 0 || missingCategory}
-          className="mt-3 min-h-12 w-full rounded-xl bg-ok-strong font-semibold text-white transition-opacity disabled:opacity-50"
+          className="mt-3 min-h-12 w-full rounded-xl bg-accent-strong font-semibold text-white transition-opacity disabled:opacity-50"
         >
           {saving ? "Guardando…" : "Confirmar y guardar"}
         </button>
@@ -171,7 +171,7 @@ function LineCard({
           checked={line.include}
           disabled={isUSD}
           onChange={(e) => onChange(line.key, { include: e.target.checked })}
-          className="mt-1 size-5 accent-[var(--ok)]"
+          className="mt-1 size-5 accent-[var(--accent)]"
           aria-label={`Cargar ${line.description}`}
         />
         <span className="min-w-0 flex-1">

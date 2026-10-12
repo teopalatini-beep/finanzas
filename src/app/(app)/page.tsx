@@ -48,7 +48,7 @@ export default async function HoyPage({ searchParams }: { searchParams: SearchPa
               {budgetsFrom && ` Los presupuestos arrancan el ${longDate(budgetsFrom)}.`}
             </p>
             <details className="mt-2 text-sm">
-              <summary className="min-h-9 cursor-pointer font-medium text-ok-fg">¿Cómo se calcula?</summary>
+              <summary className="min-h-9 cursor-pointer font-medium text-accent-fg">¿Cómo se calcula?</summary>
               <dl className="mt-1 divide-y divide-border rounded-xl border border-border bg-surface px-3">
                 <div className="flex justify-between py-2">
                   <dt>Sueldo</dt>
@@ -98,7 +98,7 @@ export default async function HoyPage({ searchParams }: { searchParams: SearchPa
         )}
         <Link
           href="/gastos/nuevo"
-          className="mt-3 flex min-h-11 items-center justify-center rounded-xl bg-ok-strong font-medium text-white"
+          className="mt-3 flex min-h-11 items-center justify-center rounded-xl bg-accent-strong font-medium text-white"
         >
           Cargar un gasto
         </Link>

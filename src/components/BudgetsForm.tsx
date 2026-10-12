@@ -7,7 +7,7 @@ import { useActionForm } from "@/components/useActionForm";
 type EnvelopeOption = { id: string; name: string; emoji: string; amount: number };
 
 const field =
-  "mt-1 min-h-11 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-ok";
+  "mt-1 min-h-11 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-accent";
 
 export function BudgetsForm({ envelopes, budgetsFrom }: { envelopes: EnvelopeOption[]; budgetsFrom: string | null }) {
   const [state, onSubmit, pending] = useActionForm<BudgetsState>(updateBudgets, { error: null, saved: false });
@@ -45,7 +45,7 @@ export function BudgetsForm({ envelopes, budgetsFrom }: { envelopes: EnvelopeOpt
       <button
         type="submit"
         disabled={pending}
-        className="min-h-11 rounded-xl bg-ok-strong px-5 font-semibold text-white transition-opacity disabled:opacity-60"
+        className="min-h-11 rounded-xl bg-accent-strong px-5 font-semibold text-white transition-opacity disabled:opacity-60"
       >
         {pending ? "Guardando…" : "Guardar presupuestos"}
       </button>

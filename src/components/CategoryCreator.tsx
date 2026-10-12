@@ -7,7 +7,7 @@ import { useActionForm } from "@/components/useActionForm";
 type EnvelopeOption = { envelopeId: string; envelope: string; emoji: string };
 
 const field =
-  "mt-1 min-h-11 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-ok";
+  "mt-1 min-h-11 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-accent";
 
 // "¿Falta una categoría?": se crea acá y aparece enseguida en la lista de abajo.
 export function CategoryCreator({ envelopes }: { envelopes: EnvelopeOption[] }) {
@@ -19,7 +19,7 @@ export function CategoryCreator({ envelopes }: { envelopes: EnvelopeOption[] }) 
 
   return (
     <details className="rounded-2xl border border-border bg-surface p-4">
-      <summary className="min-h-10 cursor-pointer text-sm font-medium text-ok-fg">
+      <summary className="min-h-10 cursor-pointer text-sm font-medium text-accent-fg">
         ¿Falta una categoría? Crear una nueva
       </summary>
       <form ref={ref} onSubmit={onSubmit} className="space-y-3 pt-3">
@@ -74,7 +74,7 @@ export function CategoryCreator({ envelopes }: { envelopes: EnvelopeOption[] }) 
         <button
           type="submit"
           disabled={pending}
-          className="min-h-11 w-full rounded-xl bg-ok-strong px-5 font-semibold text-white transition-opacity disabled:opacity-60"
+          className="min-h-11 w-full rounded-xl bg-accent-strong px-5 font-semibold text-white transition-opacity disabled:opacity-60"
         >
           {pending ? "Creando…" : "Crear categoría"}
         </button>

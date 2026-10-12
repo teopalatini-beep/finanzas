@@ -31,7 +31,7 @@ export default async function ImportarPage() {
     <div className="space-y-5">
       <header>
         <h1 className="text-2xl font-semibold">Subir resumen o comprobantes</h1>
-        <Link href="/gastos/nuevo" className="text-sm font-medium text-ok-fg underline underline-offset-2">
+        <Link href="/gastos/nuevo" className="text-sm font-medium text-accent-fg underline underline-offset-2">
           ¿Un solo gasto? Cargalo a mano
         </Link>
       </header>
