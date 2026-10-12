@@ -19,7 +19,7 @@ export function StatementAlertCard({ alert }: { alert: StatementAlert }) {
           {overdue
             ? `Venció el ${longDate(alert.due)}. `
             : `Vence el ${longDate(alert.due)} (${alert.daysToDue === 0 ? "hoy" : `en ${alert.daysToDue} ${alert.daysToDue === 1 ? "día" : "días"}`}). `}
-          Hasta que lo subas, el libre puede estar inflado.
+          Hasta que lo subas, tu saldo puede estar inflado.
         </p>
         <Link
           href="/gastos/importar"

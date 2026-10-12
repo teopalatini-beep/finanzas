@@ -42,5 +42,12 @@ export async function getBalance(): Promise<BalanceData | null> {
     }, 0);
 
   const openingBalance = Number(row.opening_balance);
-  return { balance: openingBalance + salaries - spent - saved, openingBalance, openingOn, salaries, spent, saved };
+  return {
+    balance: openingBalance + salaries - spent - saved,
+    openingBalance,
+    openingOn,
+    salaries,
+    spent,
+    saved,
+  };
 }

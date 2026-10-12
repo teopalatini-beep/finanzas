@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { BalanceCard } from "@/components/BalanceCard";
+import { SalaryForm } from "@/components/SalaryBalanceForms";
 import { ForecastCard } from "@/components/ForecastCard";
 import { VisaProjectionCard } from "@/components/VisaProjectionCard";
 import { StatementAlertCard } from "@/components/StatementAlertCard";
 import { UndoToast } from "@/components/UndoToast";
-import { getBalance } from "@/lib/balance";
 import { getHoyData } from "@/lib/data";
-import { longDate } from "@/lib/dates";
+import { longDate, todayISO } from "@/lib/dates";
 import { formatARS } from "@/lib/format";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -17,9 +17,24 @@ export default async function HoyPage({ searchParams }: { searchParams: SearchPa
   const savedParam = Array.isArray(params.guardado) ? params.guardado[0] : params.guardado;
   const savedId = savedParam && isUUID(savedParam) ? savedParam : null;
 
-  const [data, balance] = await Promise.all([getHoyData(), getBalance()]);
+  const data = await getHoyData();
 
-  if (!data || data.envelopes.length === 0) {
+  if (!data) {
+    // Sin ciclo vigente: lo normal es que acabes de cobrar y falte cargar el sueldo.
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-semibold">Cargá tu sueldo para arrancar el ciclo</h1>
+        <p className="text-muted">
+          Si ya cobraste, poné el día y el monto: se crea el ciclo hasta el próximo cobro y se suma a tu saldo.
+        </p>
+        <section className="rounded-2xl border border-border bg-surface p-4">
+          <SalaryForm today={todayISO()} />
+        </section>
+      </div>
+    );
+  }
+
+  if (data.envelopes.length === 0) {
     return (
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold">Todavía no hay datos</h1>
@@ -30,8 +45,7 @@ export default async function HoyPage({ searchParams }: { searchParams: SearchPa
     );
   }
 
-  const { period, envelopes, todayExpenses, budgetsActive, budgetsFrom, free, forecast, statementAlert, visaProjection } = data;
-  const left = budgetsActive ? envelopes.reduce((sum, e) => sum + (e.budget - e.spent), 0) : free.amount;
+  const { period, todayExpenses, forecast, statementAlert, visaProjection, balance } = data;
 
   return (
     <div className="space-y-4">
@@ -41,46 +55,59 @@ export default async function HoyPage({ searchParams }: { searchParams: SearchPa
           Faltan {period.daysLeft} {period.daysLeft === 1 ? "día" : "días"} · cobrás el{" "}
           {longDate(period.nextPayday)}
         </p>
-        <h1 className="mt-2 text-sm font-medium text-muted">
-          {budgetsActive ? "Hasta fin de mes te quedan" : "Libre hasta fin de mes"}
-        </h1>
-        <p className="text-5xl font-semibold tabular-nums tracking-tight">{formatARS(left)}</p>
-
-        {!budgetsActive && (
+        {balance && (
           <>
-            <p className="mt-2 text-sm text-muted">
-              Este ciclo estás midiendo cuánto gastás en cada cosa.
-              {budgetsFrom && ` Los presupuestos arrancan el ${longDate(budgetsFrom)}.`}
-            </p>
+            <h1 className="mt-2 text-sm font-medium text-muted">Te quedan</h1>
+            <p className="text-5xl font-semibold tabular-nums tracking-tight">{formatARS(balance.balance)}</p>
             <details className="mt-2 text-sm">
               <summary className="min-h-9 cursor-pointer font-medium text-accent-fg">¿Cómo se calcula?</summary>
               <dl className="mt-1 divide-y divide-border rounded-xl border border-border bg-surface px-3">
                 <div className="flex justify-between py-2">
-                  <dt>Sueldo</dt>
-                  <dd className="tabular-nums">{formatARS(period.income)}</dd>
+                  <dt>Saldo que cargaste el {longDate(balance.openingOn)}</dt>
+                  <dd className="tabular-nums">{formatARS(balance.openingBalance)}</dd>
                 </div>
                 <div className="flex justify-between py-2">
-                  <dt>Fijos fuera de tarjeta</dt>
-                  <dd className="tabular-nums">−{formatARS(free.fixed)}</dd>
+                  <dt>Sueldos cobrados desde entonces</dt>
+                  <dd className="tabular-nums">+{formatARS(balance.salaries)}</dd>
                 </div>
                 <div className="flex justify-between py-2">
-                  <dt>Ahorro</dt>
-                  <dd className="tabular-nums">−{formatARS(free.savings)}</dd>
+                  <dt>Gastos que ya salieron</dt>
+                  <dd className="tabular-nums">−{formatARS(balance.spent)}</dd>
                 </div>
                 <div className="flex justify-between py-2">
-                  <dt>Gastado este ciclo (tarjeta y efectivo)</dt>
-                  <dd className="tabular-nums">−{formatARS(free.spent)}</dd>
+                  <dt>Pasado a ahorro</dt>
+                  <dd className="tabular-nums">
+                    {balance.saved >= 0 ? "−" : "+"}
+                    {formatARS(Math.abs(balance.saved))}
+                  </dd>
                 </div>
               </dl>
               <p className="mt-1 text-xs text-muted">
-                La tarjeta se actualiza cuando subís el resumen: hasta entonces, lo que se paga con la Visa puede estar incompleto.
+                Las compras con la Visa bajan tu saldo el día que vence el resumen, no cuando comprás.
               </p>
             </details>
           </>
         )}
       </header>
 
-      <BalanceCard balance={balance} />
+      {period.daysLeft <= 2 && (
+        <section className="rounded-2xl border border-border bg-surface p-4 text-sm">
+          <p className="font-medium">
+            {period.daysLeft === 1 ? "Mañana" : "Pasado mañana"} cobrás ({longDate(period.nextPayday)}).
+          </p>
+          <p className="mt-1 text-muted">
+            Ese día entrá a Más → Cobré el sueldo y cargalo: sin eso la app no arranca el ciclo nuevo.
+          </p>
+          <Link
+            href="/mas"
+            className="mt-2 inline-flex min-h-11 items-center font-medium text-accent-fg underline underline-offset-2"
+          >
+            Ir a cargar el sueldo
+          </Link>
+        </section>
+      )}
+
+      {!balance && <BalanceCard balance={null} />}
 
       {statementAlert && <StatementAlertCard alert={statementAlert} />}
 

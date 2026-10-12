@@ -1,5 +1,6 @@
 import { dueFor, lastClosingOnOrBefore, nextClosing, type CardRules } from "@/lib/card-dates";
 import { getCardSettings, loadCycle, loadNextCycleCommitment } from "@/lib/cashflow";
+import { getBalance, type BalanceData } from "@/lib/balance";
 import { averageOf, forecastRange } from "@/lib/forecast";
 import { loadSavings } from "@/lib/savings-data";
 import { createClient } from "@/lib/supabase/server";
@@ -38,6 +39,7 @@ export type HoyData = {
   budgetsFrom: string | null;
   // Lo que te queda libre: sueldo − fijos − ahorro − lo gastado en el ciclo.
   free: { amount: number; fixed: number; savings: number; spent: number };
+  balance: BalanceData | null;
   forecast: ForecastData;
   statementAlert: StatementAlert | null;
   visaProjection: VisaProjection | null;
@@ -47,6 +49,7 @@ export type HoyData = {
 // Pronóstico de fin de ciclo: antes del día FORECAST_FROM_DAY hay muy pocos datos para proyectar.
 export type ForecastData =
   | { status: "wait"; day: number; fromDay: number }
+  | { status: "empty"; sample: number } // hay ciclo avanzado pero todavía casi no cargaste gastos
   | {
       status: "ok";
       day: number;
@@ -68,6 +71,7 @@ export type VisaProjection = { low: number; high: number; closing: string; due: 
 export type StatementAlert = { closing: string; due: string; daysToDue: number };
 
 const FORECAST_FROM_DAY = 10;
+const FORECAST_MIN_EXPENSES = 3; // con menos gastos que esto no hay ritmo que proyectar
 const LARGE_PURCHASE_SHARE = 0.1; // una compra de más del 10% del sueldo es "puntual"
 const GUSTO_CUT = 0.1;
 const STATEMENT_GRACE_DAYS = 3; // el resumen tarda unos días en estar disponible
@@ -189,44 +193,55 @@ export async function getHoyData(): Promise<HoyData | null> {
   const nextActive = !budgetsFrom || nextStart >= budgetsFrom;
   const freeAmount = income - fixedOffCard - savingsArs - spentCycle;
 
+  // ---- Tu saldo: sueldo cargado y todo lo que se fue restando ----
+  const balance = await getBalance();
+
   // ---- Pronóstico de fin de ciclo ----
   const day = daysBetween(period.start_date, today) + 1;
   let forecast: ForecastData = { status: "wait", day, fromDay: FORECAST_FROM_DAY };
   if (day >= FORECAST_FROM_DAY) {
+    // Solo se mide desde que empezaste a cargar: los días anteriores no tienen gastos porque no los cargaste.
+    const trackFrom = balance && balance.openingOn > period.start_date ? balance.openingOn : period.start_date;
     // Solo lo que sale de tu cuenta día a día. Sin fijos, cuotas ni compras con la tarjeta (esas caen en otro ciclo).
     const cash = cycleTxs.filter(
       (t) =>
         !t.isCard &&
         !t.envelopeIsFixed &&
         t.installments_count === null &&
-        t.occurred_on >= period.start_date &&
+        t.occurred_on >= trackFrom &&
         t.occurred_on <= today,
     );
     const threshold = income * LARGE_PURCHASE_SHARE;
     const normal = cash.filter((t) => t.amount <= threshold);
     const large = cash.filter((t) => t.amount > threshold);
 
-    const byDay = new Map<string, number>();
-    for (const t of normal) byDay.set(t.occurred_on, (byDay.get(t.occurred_on) ?? 0) + t.amount);
-    const daily = Array.from({ length: day }, (_, i) => byDay.get(addDays(period.start_date, i)) ?? 0);
+    if (normal.length < FORECAST_MIN_EXPENSES) {
+      forecast = { status: "empty", sample: normal.length };
+    } else {
+      const trackedDays = daysBetween(trackFrom, today) + 1;
+      const byDay = new Map<string, number>();
+      for (const t of normal) byDay.set(t.occurred_on, (byDay.get(t.occurred_on) ?? 0) + t.amount);
+      const daily = Array.from({ length: trackedDays }, (_, i) => byDay.get(addDays(trackFrom, i)) ?? 0);
 
-    const remaining = Math.max(0, daysBetween(today, period.end_date));
-    const range = forecastRange(freeAmount, daily, remaining, Number(period.start_date.replaceAll("-", "")));
-    const pace = averageOf(daily);
-    const total = normal.reduce((sum, t) => sum + t.amount, 0);
-    const gustoTotal = normal.filter((t) => t.kind === "gusto").reduce((sum, t) => sum + t.amount, 0);
+      const remaining = Math.max(0, daysBetween(today, period.end_date));
+      const base = balance ? balance.balance : freeAmount;
+      const range = forecastRange(base, daily, remaining, Number(period.start_date.replaceAll("-", "")));
+      const pace = averageOf(daily);
+      const total = normal.reduce((sum, t) => sum + t.amount, 0);
+      const gustoTotal = normal.filter((t) => t.kind === "gusto").reduce((sum, t) => sum + t.amount, 0);
 
-    forecast = {
-      status: "ok",
-      day,
-      remaining,
-      ...range,
-      dailyPace: pace,
-      sample: normal.length,
-      excluded: large.length,
-      excludedAmount: large.reduce((sum, t) => sum + t.amount, 0),
-      gustoCut: total > 0 ? pace * remaining * (gustoTotal / total) * GUSTO_CUT : 0,
-    };
+      forecast = {
+        status: "ok",
+        day: trackedDays,
+        remaining,
+        ...range,
+        dailyPace: pace,
+        sample: normal.length,
+        excluded: large.length,
+        excludedAmount: large.reduce((sum, t) => sum + t.amount, 0),
+        gustoCut: total > 0 ? pace * remaining * (gustoTotal / total) * GUSTO_CUT : 0,
+      };
+    }
   }
 
   // ---- ¿Falta subir el resumen de la tarjeta? ----
@@ -241,7 +256,9 @@ export async function getHoyData(): Promise<HoyData | null> {
   );
   const dueOfLast = dueFor(lastClosing, card);
   const statementAlert: StatementAlert | null =
-    daysBetween(lastClosing, today) >= STATEMENT_GRACE_DAYS && !covered
+    daysBetween(lastClosing, today) >= STATEMENT_GRACE_DAYS &&
+    !covered &&
+    !(balance && dueOfLast < balance.openingOn) // ya lo pagaste antes de cargar tu saldo: está dentro de él
       ? { closing: lastClosing, due: dueOfLast, daysToDue: daysBetween(today, dueOfLast) }
       : null;
 
@@ -284,6 +301,7 @@ export async function getHoyData(): Promise<HoyData | null> {
     budgetsActive,
     budgetsFrom,
     free: { amount: freeAmount, fixed: fixedOffCard, savings: savingsArs, spent: spentCycle },
+    balance,
     forecast,
     statementAlert,
     visaProjection,

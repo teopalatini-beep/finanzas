@@ -26,6 +26,20 @@ export function ForecastCard({ forecast }: { forecast: ForecastData }) {
     );
   }
 
+  if (forecast.status === "empty") {
+    return (
+      <section className="rounded-2xl border border-dashed border-border p-4">
+        <h2 className="flex items-center gap-2 font-medium">
+          <TrendingUp size={18} className="text-muted" aria-hidden /> Pronóstico de fin de ciclo
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          Todavía hay muy pocos gastos cargados para proyectar. Cuando tengas unos días de gastos en efectivo o débito,
+          te digo con cuánto llegás a cobrar.
+        </p>
+      </section>
+    );
+  }
+
   const f = forecast;
   const tone = f.mid < 0 ? "over" : f.low < 0 ? "warn" : "ok";
   const { Icon, cls, text } = TONE[tone];
@@ -56,7 +70,7 @@ export function ForecastCard({ forecast }: { forecast: ForecastData }) {
           <li>
             Tu gasto diario típico en efectivo, débito y transferencias es de{" "}
             <span className="font-medium text-foreground">{formatARS(f.dailyPace)}</span> (con {f.sample}{" "}
-            {f.sample === 1 ? "gasto" : "gastos"} de los {f.day} días que van del ciclo).
+            {f.sample === 1 ? "gasto" : "gastos"} en {f.day} {f.day === 1 ? "día" : "días"} de seguimiento).
           </li>
           <li>Se simulan los {f.remaining} días que faltan con ese comportamiento, y el rango deja afuera los extremos.</li>
           <li>No incluye fijos, cuotas ni compras con la tarjeta: lo que pagues con la Visa cae en el próximo ciclo.</li>
