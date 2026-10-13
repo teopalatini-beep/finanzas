@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { InboxCard } from "@/components/InboxCard";
 import { AlertsCard } from "@/components/AlertsCard";
 import { BalanceCard } from "@/components/BalanceCard";
 import { SalaryForm } from "@/components/SalaryBalanceForms";
@@ -8,7 +9,8 @@ import { StatementAlertCard } from "@/components/StatementAlertCard";
 import { UndoToast } from "@/components/UndoToast";
 import { buildAlerts } from "@/lib/alerts";
 import { getHoyData } from "@/lib/data";
-import { longDate, todayISO } from "@/lib/dates";
+import { loadInbox } from "@/lib/inbox";
+import { daysBetween, longDate, todayISO } from "@/lib/dates";
 import { formatARS } from "@/lib/format";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -50,6 +52,11 @@ export default async function HoyPage({ searchParams }: { searchParams: SearchPa
   const { period, todayExpenses, forecast, statementAlert, visaProjection, balance } = data;
 
   const alerts = buildAlerts(data, formatARS);
+  // En Hoy solo lo urgente: facturas que vencen en la semana (o ya vencieron) y los pagos para confirmar.
+  const today = todayISO();
+  const inbox = (await loadInbox()).filter(
+    (i) => i.kind === "pago" || (i.dueOn !== null && daysBetween(today, i.dueOn) <= 7),
+  );
 
   return (
     <div className="space-y-4">
@@ -114,6 +121,8 @@ export default async function HoyPage({ searchParams }: { searchParams: SearchPa
       {!balance && <BalanceCard balance={null} />}
 
       <AlertsCard alerts={alerts} />
+
+      <InboxCard items={inbox} />
 
       {statementAlert && <StatementAlertCard alert={statementAlert} />}
 

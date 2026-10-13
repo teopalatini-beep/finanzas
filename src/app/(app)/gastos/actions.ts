@@ -62,6 +62,16 @@ export async function addExpense(_prev: ExpenseState, formData: FormData): Promi
     .single();
   if (error || !saved) return { error: "No se pudo guardar el gasto. Probá de nuevo." };
 
+  // Si venía de un mail detectado, queda confirmado y enlazado a este gasto.
+  const inboxId = String(formData.get("inbox_id") ?? "");
+  if (isUUID(inboxId)) {
+    await supabase
+      .from("inbox_items")
+      .update({ status: "confirmado", transaction_id: saved.id })
+      .eq("id", inboxId)
+      .eq("status", "pendiente");
+  }
+
   revalidatePath("/");
   revalidatePath("/gastos");
   // El id viaja en la dirección para ofrecer "Deshacer" en la pantalla de Hoy.

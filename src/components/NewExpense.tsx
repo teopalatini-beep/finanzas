@@ -16,14 +16,20 @@ export function NewExpense({
   today,
   advice,
   memory,
+  initialDraft = null,
+  inboxId = null,
 }: {
   groups: Group;
   methods: Methods;
   today: string;
   advice: AdviceContext | null;
   memory: MemoryEntry[];
+  initialDraft?: SpokenDraft | null; // viene de un mail detectado
+  inboxId?: string | null;
 }) {
-  const [draft, setDraft] = useState<{ key: number; value: SpokenDraft } | null>(null);
+  const [draft, setDraft] = useState<{ key: number; value: SpokenDraft } | null>(
+    initialDraft ? { key: 1, value: initialDraft } : null,
+  );
   const onDraft = useCallback((key: number, value: SpokenDraft) => setDraft({ key, value }), []);
 
   return (
@@ -38,6 +44,7 @@ export function NewExpense({
         advice={advice}
         draft={draft?.value ?? null}
         memory={memory}
+        inboxId={inboxId}
       />
     </>
   );

@@ -28,6 +28,12 @@ export type AdviceContext = {
   free: number;
 };
 
+function findMemory(memory: MemoryEntry[], text: string): MemoryEntry | undefined {
+  const key = merchantKey(text);
+  if (key.length < 2) return undefined;
+  return memory.find((m) => m.key === key) ?? (key.length >= 3 ? memory.find((m) => m.key.startsWith(key)) : undefined);
+}
+
 const initial: ExpenseState = { error: null };
 const field =
   "mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 outline-none focus:border-accent";
@@ -40,6 +46,7 @@ export function ExpenseForm({
   advice,
   draft = null,
   memory = [],
+  inboxId = null,
 }: {
   groups: Group[];
   methods: Method[];
@@ -47,14 +54,20 @@ export function ExpenseForm({
   advice: AdviceContext | null;
   draft?: SpokenDraft | null; // lo que se interpretó de un dictado: completa el formulario
   memory?: MemoryEntry[]; // lo que la app aprendió de tus gastos anteriores
+  inboxId?: string | null; // si viene de un mail detectado: al guardar, se marca como confirmado
 }) {
   const [state, onSubmit, pending] = useActionForm(addExpense, initial);
   const draftAmount = draft?.amount ? String(draft.amount) : "";
   const [amount, setAmount] = useState(draftAmount);
-  const [categoryId, setCategoryId] = useState(draft?.categoryId ?? "");
+  // Un borrador con descripción (dictado o mail) también aprovecha lo aprendido de tus gastos anteriores.
+  const fromMemory = draft?.description ? findMemory(memory, draft.description) : undefined;
+  const [categoryId, setCategoryId] = useState(draft?.categoryId ?? fromMemory?.categoryId ?? "");
   const [date, setDate] = useState(draft?.date ?? today);
   const [methodId, setMethodId] = useState(
-    draft?.methodId ?? (methods.find((m) => m.type === "efectivo") ?? methods[0])?.id ?? "",
+    draft?.methodId ??
+      (fromMemory && methods.some((m) => m.id === fromMemory.methodId) ? fromMemory.methodId : undefined) ??
+      (methods.find((m) => m.type === "efectivo") ?? methods[0])?.id ??
+      "",
   );
   const draftCard = methods.find((m) => m.id === draft?.methodId)?.type === "tarjeta_credito";
   const [inInstallments, setInInstallments] = useState(Boolean(draft?.installments) && draftCard);
@@ -77,9 +90,7 @@ export function ExpenseForm({
 
   function onDescription(text: string) {
     setDescription(text);
-    const key = merchantKey(text);
-    if (key.length < 2) return setSuggestion(null);
-    const entry = memory.find((m) => m.key === key) ?? (key.length >= 3 ? memory.find((m) => m.key.startsWith(key)) : undefined);
+    const entry = findMemory(memory, text);
     if (entry) applyMemory(entry);
     else setSuggestion(null);
   }
@@ -116,6 +127,7 @@ export function ExpenseForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
+      {inboxId && <input type="hidden" name="inbox_id" value={inboxId} />}
       <label className="block">
         <span className="text-sm font-medium">Monto</span>
         <MoneyInput

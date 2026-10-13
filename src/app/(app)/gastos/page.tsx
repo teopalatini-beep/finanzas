@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { CalendarClock, CreditCard, FileUp, PencilLine } from "lucide-react";
+import { InboxCard } from "@/components/InboxCard";
 import { EnvelopeCard } from "@/components/EnvelopeCard";
 import { DeleteExpenseButton } from "@/components/DeleteExpenseButton";
 import { getCardSettings, loadCycle } from "@/lib/cashflow";
 import { getHoyData } from "@/lib/data";
+import { loadInbox } from "@/lib/inbox";
 import { longDate, todayISO } from "@/lib/dates";
 import { formatARS } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
@@ -19,9 +21,10 @@ export default async function GastosPage() {
     .gte("end_date", today)
     .maybeSingle();
 
-  const [rows, hoy] = await Promise.all([
+  const [rows, hoy, inbox] = await Promise.all([
     period ? getCardSettings().then((card) => loadCycle(period, card)) : Promise.resolve([]),
     getHoyData(),
+    loadInbox(),
   ]);
   const total = rows.reduce((sum, r) => sum + r.amount, 0);
 
@@ -35,6 +38,8 @@ export default async function GastosPage() {
             : `Se pagan en este ciclo: ${formatARS(total)} en ${rows.length} ${rows.length === 1 ? "gasto" : "gastos"}`}
         </p>
       </header>
+
+      <InboxCard items={inbox} />
 
       {hoy && (
         <>

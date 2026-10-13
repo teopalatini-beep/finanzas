@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { signOut } from "@/app/login/actions";
 import { BudgetsForm } from "@/components/BudgetsForm";
+import { IngestSetup } from "@/components/IngestSetup";
 import { OpeningBalanceForm, SalaryForm } from "@/components/SalaryBalanceForms";
 import { SettingsForm } from "@/components/SettingsForm";
 import { ThemePicker } from "@/components/ThemePicker";
@@ -23,6 +24,7 @@ export default async function MasPage() {
   ]);
   const { data: bal } = await supabase.from("settings").select("opening_balance, opening_balance_on").maybeSingle();
   const { data: floorRow } = await supabase.from("settings").select("balance_floor").maybeSingle();
+  const { data: tokenRow } = await supabase.from("settings").select("ingest_token_hash").maybeSingle();
   const { data: visa } = await supabase.from("settings").select("visa_typical_min, visa_typical_max").maybeSingle();
 
   return (
@@ -82,6 +84,14 @@ export default async function MasPage() {
           visaMin={visa?.visa_typical_min != null ? Number(visa.visa_typical_min) : null}
           visaMax={visa?.visa_typical_max != null ? Number(visa.visa_typical_max) : null}
         />
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <h2 className="font-medium">Conexión con tus mails</h2>
+        <p className="mb-3 mt-1 text-sm text-muted">
+          Un script en tu cuenta de Google manda a la app los mails de facturas y pagos. Acá creás la clave que usa.
+        </p>
+        <IngestSetup hasToken={Boolean(tokenRow?.ingest_token_hash)} />
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4">

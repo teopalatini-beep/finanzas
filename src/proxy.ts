@@ -46,6 +46,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // Se excluyen los archivos que el navegador pide sin sesión (manifiesto e íconos de la app instalable).
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|icon|apple-icon|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/ingest|manifest.webmanifest|icon|apple-icon|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
