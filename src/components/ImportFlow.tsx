@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition, type FormEvent } from "react";
 import { saveImport, parseStatement } from "@/app/(app)/gastos/importar/actions";
 import { formatARS } from "@/lib/format";
 import { longDate } from "@/lib/dates";
@@ -16,10 +16,54 @@ type Method = { id: string; name: string; type: string };
 const field =
   "mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 outline-none focus:border-accent";
 
+// La web acepta pedidos de hasta ~4,5 MB: las fotos del iPhone pesan más, así que se achican antes de subir.
+const MAX_UPLOAD_BYTES = 4_200_000;
+const MAX_SIDE = 2400;
+
+async function shrink(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+    if (!blob) return file;
+    return new File([blob], `${file.name.replace(/\.\w+$/, "")}.jpg`, { type: "image/jpeg" });
+  } catch {
+    return file; // si el navegador no puede leerla, se manda tal cual
+  }
+}
+
 export function ImportFlow({ groups, methods }: { groups: Group[]; methods: Method[] }) {
-  const [state, action, pending] = useActionState<ParseState, FormData>(parseStatement, {
+  const [state, dispatch, pending] = useActionState<ParseState, FormData>(parseStatement, {
     status: "idle",
   });
+  const [, startTransition] = useTransition();
+  const [preparing, setPreparing] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const input = form.elements.namedItem("file") as HTMLInputElement;
+    const methodId = String(new FormData(form).get("payment_method_id") ?? "");
+    setLocalError(null);
+    setPreparing(true);
+    const files = await Promise.all(Array.from(input.files ?? []).map(shrink));
+    setPreparing(false);
+
+    if (files.reduce((sum, f) => sum + f.size, 0) > MAX_UPLOAD_BYTES) {
+      setLocalError("Los archivos pesan demasiado para subirlos juntos (máximo unos 4 MB). Subí menos fotos por vez, o un PDF más liviano.");
+      return;
+    }
+    const data = new FormData();
+    data.set("payment_method_id", methodId);
+    files.forEach((f) => data.append("file", f));
+    startTransition(() => dispatch(data));
+  }
 
   if (state.status === "ready") {
     return <Review key={state.fileHash} data={state} groups={groups} />;
@@ -31,7 +75,7 @@ export function ImportFlow({ groups, methods }: { groups: Group[]; methods: Meth
   );
 
   return (
-    <form action={action} className="space-y-5">
+    <form onSubmit={onSubmit} className="space-y-5">
       <label className="block">
         <span className="text-sm font-medium">Resumen, fotos o capturas</span>
         <input
@@ -59,18 +103,18 @@ export function ImportFlow({ groups, methods }: { groups: Group[]; methods: Meth
         Podés subir un resumen en PDF, o varias fotos y capturas a la vez (tickets, transferencias). Los archivos se leen y se descartan: no se guardan, solo los datos que confirmes en el próximo paso.
       </p>
 
-      {state.status === "error" && (
+      {(localError || state.status === "error") && (
         <p role="alert" className="text-sm font-medium text-over-fg">
-          {state.error}
+          {localError ?? (state.status === "error" ? state.error : null)}
         </p>
       )}
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || preparing}
         className="min-h-12 w-full rounded-xl bg-accent-strong font-semibold text-white transition-opacity disabled:opacity-60"
       >
-        {pending ? "Leyendo el resumen… puede tardar un minuto" : "Leer resumen"}
+        {preparing ? "Preparando las fotos…" : pending ? "Leyendo el resumen… puede tardar un minuto" : "Leer resumen"}
       </button>
     </form>
   );
