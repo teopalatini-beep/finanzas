@@ -65,11 +65,24 @@ export async function addExpense(_prev: ExpenseState, formData: FormData): Promi
   // Si venía de un mail detectado, queda confirmado y enlazado a este gasto.
   const inboxId = String(formData.get("inbox_id") ?? "");
   if (isUUID(inboxId)) {
-    await supabase
+    const { data: item } = await supabase
       .from("inbox_items")
       .update({ status: "confirmado", transaction_id: saved.id })
       .eq("id", inboxId)
-      .eq("status", "pendiente");
+      .eq("status", "pendiente")
+      .select("kind")
+      .maybeSingle();
+
+    // El mismo pago puede estar en la bandeja como factura y como comprobante: al confirmar uno,
+    // el otro (mismo importe) se resuelve solo. Una factura pagada cierra el comprobante; un pago cierra la factura.
+    if (item) {
+      await supabase
+        .from("inbox_items")
+        .update({ status: item.kind === "pago" ? "confirmado" : "descartado", transaction_id: saved.id })
+        .eq("status", "pendiente")
+        .eq("kind", item.kind === "pago" ? "factura" : "pago")
+        .eq("amount", txAmount);
+    }
   }
 
   revalidatePath("/");

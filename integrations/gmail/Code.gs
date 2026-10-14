@@ -2,10 +2,10 @@
  * Manda a Finanzas App los mails de facturas y pagos.
  * Se pega en Google Apps Script (script.google.com), dentro de TU cuenta de Google.
  *
- * Propiedades del script (Configuración del proyecto > Propiedades del script):
- *   APP_URL       dirección de tu app, con /api/ingest/mail al final
- *   INGEST_TOKEN  la clave que creaste en Más > Conexión con tus mails
- *   EXTRA_SENDERS (opcional) más remitentes separados por coma, ej. "banco.com.ar,otro.com"
+ * Propiedades del script (Configuracion del proyecto > Propiedades del script):
+ *   APP_URL       direccion de tu app, con /api/ingest/mail al final
+ *   INGEST_TOKEN  la clave que creaste en Mas > Conexion con tus mails
+ *   EXTRA_SENDERS (opcional) mas remitentes separados por coma, ej. "banco.com.ar,otro.com"
  */
 
 var SENDERS = ['aysadigital.com.ar', 'edenor.com', 'mercadopago.com', 'buenosaires.gob.ar'];
@@ -58,7 +58,7 @@ function sync() {
         console.error('Fallo ' + res.getResponseCode() + ': ' + res.getContentText().slice(0, 200));
       }
     });
-    // Solo se marca como enviado si salió todo bien: si falló, se reintenta en la próxima corrida.
+    // Solo se marca como enviado si salio todo bien: si fallo, se reintenta en la proxima corrida.
     if (allOk) thread.addLabel(label);
   });
 }
