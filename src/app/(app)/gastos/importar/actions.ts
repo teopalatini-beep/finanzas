@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { addMonths, todayISO } from "@/lib/dates";
 import { extractStatement } from "@/lib/extract";
-import type { ParseState, PlanOption, ReviewLine, SaveState } from "@/lib/import-types";
+import type { ParseState, PlanOption, ReplaceCandidate, ReviewLine, SaveState } from "@/lib/import-types";
 import { createClient } from "@/lib/supabase/server";
 
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -120,6 +120,21 @@ export async function parseStatement(_prev: ParseState, formData: FormData): Pro
     };
   });
 
+  // Gastos cargados a mano con este medio de pago: el desglose puede reemplazar a uno de ellos.
+  const { data: manual } = await supabase
+    .from("transactions")
+    .select("id, occurred_on, description, amount")
+    .eq("payment_method_id", paymentMethodId)
+    .neq("source", "documento")
+    .order("occurred_on", { ascending: false })
+    .limit(30);
+  const candidates: ReplaceCandidate[] = (manual ?? []).map((t) => ({
+    id: t.id,
+    date: t.occurred_on,
+    description: t.description ?? "Sin descripción",
+    amount: Number(t.amount),
+  }));
+
   return {
     status: "ready",
     fileName,
@@ -128,6 +143,7 @@ export async function parseStatement(_prev: ParseState, formData: FormData): Pro
     closingDate: result.data.closing_date,
     lines,
     plans,
+    candidates,
   };
 }
 
@@ -139,6 +155,7 @@ const SaveSchema = z.object({
   fileHash: z.string().length(64),
   paymentMethodId: z.string().refine(isUUID),
   closingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+  replaceIds: z.array(z.string().refine(isUUID)).max(50),
   lines: z
     .array(
       z.object({
@@ -241,6 +258,17 @@ export async function saveImport(_prev: SaveState, formData: FormData): Promise<
       await supabase.from("documents").delete().eq("id", doc.id);
       return { error: "No se pudieron guardar los gastos. Probá de nuevo." };
     }
+  }
+
+  // Los gastos que el desglose reemplaza se borran recién cuando las líneas nuevas ya están guardadas.
+  if (payload.replaceIds.length > 0) {
+    const { error } = await supabase
+      .from("transactions")
+      .delete()
+      .in("id", payload.replaceIds)
+      .eq("payment_method_id", payload.paymentMethodId)
+      .neq("source", "documento");
+    if (error) return { error: "El resumen se guardó, pero no se pudo borrar el gasto reemplazado. Borralo a mano en Gastos." };
   }
 
   void skipped;

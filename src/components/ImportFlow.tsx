@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState, useState, useTransition, type FormEvent } from "react";
+import { useActionState, useState, useTransition, type ChangeEvent, type FormEvent } from "react";
 import { saveImport, parseStatement } from "@/app/(app)/gastos/importar/actions";
 import { formatARS } from "@/lib/format";
 import { longDate } from "@/lib/dates";
-import type { ParseState, ReviewLine, SaveState, PlanOption } from "@/lib/import-types";
+import type { ParseState, ReplaceCandidate, ReviewLine, SaveState, PlanOption } from "@/lib/import-types";
 
 type Group = {
   envelope: string;
@@ -44,6 +44,7 @@ export function ImportFlow({ groups, methods }: { groups: Group[]; methods: Meth
   const [, startTransition] = useTransition();
   const [preparing, setPreparing] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [methodId, setMethodId] = useState<string | null>(null);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -74,6 +75,19 @@ export function ImportFlow({ groups, methods }: { groups: Group[]; methods: Meth
     (a, b) => Number(b.type === "tarjeta_credito") - Number(a.type === "tarjeta_credito"),
   );
 
+  // Un PDF suele ser el resumen de la tarjeta; fotos y capturas suelen ser pagos con débito o efectivo.
+  const creditId = ordered.find((m) => m.type === "tarjeta_credito")?.id;
+  const debitId = (ordered.find((m) => m.type === "debito") ?? ordered.find((m) => m.type === "efectivo"))?.id;
+  const selectedMethod = methodId ?? ordered[0]?.id;
+
+  function onFilesChange(e: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    const hasPdf = files.some((f) => f.type === "application/pdf");
+    const suggested = hasPdf ? creditId : debitId;
+    if (suggested) setMethodId(suggested);
+  }
+
   return (
     <form onSubmit={onSubmit} className="space-y-5">
       <label className="block">
@@ -84,13 +98,20 @@ export function ImportFlow({ groups, methods }: { groups: Group[]; methods: Meth
           accept="application/pdf,image/jpeg,image/png,image/webp"
           multiple
           required
+          onChange={onFilesChange}
           className="mt-1 block w-full rounded-xl border border-border bg-surface p-3 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-accent-strong file:px-3 file:py-2 file:font-medium file:text-white"
         />
       </label>
 
       <label className="block">
         <span className="text-sm font-medium">Medio de pago</span>
-        <select name="payment_method_id" required defaultValue={ordered[0]?.id} className={field}>
+        <select
+          name="payment_method_id"
+          required
+          value={selectedMethod}
+          onChange={(e) => setMethodId(e.target.value)}
+          className={field}
+        >
           {ordered.map((m) => (
             <option key={m.id} value={m.id}>
               {m.name}
@@ -129,6 +150,7 @@ function Review({
 }) {
   const [lines, setLines] = useState<ReviewLine[]>(data.lines);
   const [saveState, save, saving] = useActionState<SaveState, FormData>(saveImport, { error: null });
+  const [replaceIds, setReplaceIds] = useState<string[]>([]);
 
   const update = (key: string, patch: Partial<ReviewLine>) =>
     setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
@@ -136,12 +158,17 @@ function Review({
   const included = lines.filter((l) => l.include);
   const missingCategory = included.some((l) => !l.category_id);
   const total = included.reduce((sum, l) => sum + l.amount, 0);
+  const replaced = data.candidates.filter((c) => replaceIds.includes(c.id));
+  const replacedTotal = replaced.reduce((sum, c) => sum + c.amount, 0);
+  const toggleReplace = (id: string, on: boolean) =>
+    setReplaceIds((ids) => (on ? [...ids, id] : ids.filter((x) => x !== id)));
 
   const payload = JSON.stringify({
     fileName: data.fileName,
     fileHash: data.fileHash,
     paymentMethodId: data.paymentMethodId,
     closingDate: data.closingDate,
+    replaceIds,
     lines: included.map((l) => ({
       date: l.date,
       description: l.description,
@@ -159,6 +186,14 @@ function Review({
         Revisá cada línea antes de guardar. Destildá lo que no quieras cargar y corregí las categorías.
       </p>
 
+      {data.candidates.length > 0 && (
+        <ReplacePicker
+          candidates={data.candidates}
+          selected={replaceIds}
+          onToggle={toggleReplace}
+        />
+      )}
+
       <ul className="space-y-3">
         {lines.map((l) => (
           <LineCard key={l.key} line={l} groups={groups} plans={data.plans} onChange={update} />
@@ -170,6 +205,13 @@ function Review({
           <span className="font-semibold">{included.length}</span> gastos ·{" "}
           <span className="font-semibold tabular-nums">{formatARS(total)}</span>
         </p>
+        {replaced.length > 0 && (
+          <p className="mt-1 text-sm text-muted">
+            Se {replaced.length === 1 ? "borra 1 gasto" : `borran ${replaced.length} gastos`} cargado
+            {replaced.length === 1 ? "" : "s"} ({formatARS(replacedTotal)}) y se reemplaza
+            {replaced.length === 1 ? "" : "n"} por este desglose.
+          </p>
+        )}
         {missingCategory && (
           <p className="mt-1 text-sm font-medium text-warn-fg">Falta elegir categoría en algún gasto.</p>
         )}
@@ -188,6 +230,44 @@ function Review({
         </button>
       </div>
     </form>
+  );
+}
+
+function ReplacePicker({
+  candidates,
+  selected,
+  onToggle,
+}: {
+  candidates: ReplaceCandidate[];
+  selected: string[];
+  onToggle: (id: string, on: boolean) => void;
+}) {
+  return (
+    <section className="rounded-2xl border border-border bg-surface p-3">
+      <h2 className="font-medium">¿Ya cargaste este resumen como un gasto solo?</h2>
+      <p className="mt-1 text-sm text-muted">
+        Tildá el gasto que cargaste a mano: al confirmar se borra y queda el desglose, así no se cuenta dos veces.
+      </p>
+      <ul className="mt-2 space-y-1">
+        {candidates.map((c) => (
+          <li key={c.id}>
+            <label className="flex min-h-11 items-center gap-3">
+              <input
+                type="checkbox"
+                checked={selected.includes(c.id)}
+                onChange={(e) => onToggle(c.id, e.target.checked)}
+                className="size-5 accent-[var(--accent)]"
+              />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate">{c.description}</span>
+                <span className="block text-sm text-muted">{longDate(c.date)}</span>
+              </span>
+              <span className="font-semibold tabular-nums">{formatARS(c.amount)}</span>
+            </label>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

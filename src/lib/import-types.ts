@@ -22,6 +22,14 @@ export type PlanOption = {
   installments_count: number;
 };
 
+// Gasto cargado a mano que el desglose del resumen puede reemplazar.
+export type ReplaceCandidate = {
+  id: string;
+  date: string; // YYYY-MM-DD
+  description: string;
+  amount: number;
+};
+
 export type ParseState =
   | { status: "idle" }
   | { status: "error"; error: string }
@@ -33,6 +41,7 @@ export type ParseState =
       closingDate: string | null;
       lines: ReviewLine[];
       plans: PlanOption[];
+      candidates: ReplaceCandidate[];
     };
 
 export type SaveState = { error: string | null };
