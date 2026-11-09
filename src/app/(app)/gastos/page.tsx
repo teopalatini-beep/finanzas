@@ -10,7 +10,24 @@ import { longDate, todayISO } from "@/lib/dates";
 import { formatARS } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function GastosPage() {
+type Search = { sobre?: string; cat?: string };
+
+// Link que conserva solo el filtro pedido: sin parámetros vuelve a mostrar todo.
+const filterHref = (sobre?: string, cat?: string) => {
+  const q = new URLSearchParams();
+  if (sobre) q.set("sobre", sobre);
+  if (cat) q.set("cat", cat);
+  const qs = q.toString();
+  return qs ? `/gastos?${qs}` : "/gastos";
+};
+
+const chip = (active: boolean) =>
+  `inline-flex min-h-9 shrink-0 items-center rounded-full border px-3 text-sm ${
+    active ? "border-accent bg-accent-strong font-medium text-white" : "border-border bg-surface"
+  }`;
+
+export default async function GastosPage({ searchParams }: { searchParams: Promise<Search> }) {
+  const { sobre, cat } = await searchParams;
   const supabase = await createClient();
   const today = todayISO();
 
@@ -26,7 +43,17 @@ export default async function GastosPage() {
     getHoyData(),
     loadInbox(),
   ]);
-  const total = rows.reduce((sum, r) => sum + r.amount, 0);
+
+  // Filtros: primero el sobre (Comida, Salidas…) y, dentro de él, la categoría.
+  const sobres = [...new Set(rows.map((r) => r.envelopeName).filter((n): n is string => !!n))];
+  const categorias = sobre
+    ? [...new Set(rows.filter((r) => r.envelopeName === sobre).map((r) => r.categoryName).filter((n): n is string => !!n))]
+    : [];
+  const visible = rows.filter(
+    (r) => (!sobre || r.envelopeName === sobre) && (!cat || r.categoryName === cat),
+  );
+  const filtering = !!sobre;
+  const total = visible.reduce((sum, r) => sum + r.amount, 0);
 
   return (
     <div className="space-y-4">
@@ -35,7 +62,7 @@ export default async function GastosPage() {
         <p className="text-sm text-muted">
           {rows.length === 0
             ? "Todavía no hay gastos que se paguen en este ciclo."
-            : `Se pagan en este ciclo: ${formatARS(total)} en ${rows.length} ${rows.length === 1 ? "gasto" : "gastos"}`}
+            : `${filtering ? "Filtrados" : "Se pagan en este ciclo"}: ${formatARS(total)} en ${visible.length} ${visible.length === 1 ? "gasto" : "gastos"}`}
         </p>
       </header>
 
@@ -90,8 +117,39 @@ export default async function GastosPage() {
         </Link>
       </div>
 
+      {sobres.length > 1 && (
+        <nav aria-label="Filtrar gastos" className="space-y-2">
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+            <Link href={filterHref()} className={chip(!filtering)}>
+              Todos
+            </Link>
+            {sobres.map((n) => (
+              <Link key={n} href={filterHref(n)} className={chip(sobre === n)}>
+                {n}
+              </Link>
+            ))}
+          </div>
+          {categorias.length > 1 && (
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+              <Link href={filterHref(sobre)} className={chip(!cat)}>
+                Todas
+              </Link>
+              {categorias.map((n) => (
+                <Link key={n} href={filterHref(sobre, n)} className={chip(cat === n)}>
+                  {n}
+                </Link>
+              ))}
+            </div>
+          )}
+        </nav>
+      )}
+
+      {filtering && visible.length === 0 && (
+        <p className="text-sm text-muted">No hay gastos con ese filtro en este ciclo.</p>
+      )}
+
       <ul className="space-y-2">
-        {rows
+        {visible
           .sort((a, b) => (a.cashDate < b.cashDate ? 1 : -1))
           .map((r) => (
             <li key={r.id} className="flex items-center rounded-2xl border border-border bg-surface pr-1">
